@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude plugins *)",
+      "Read(//Users/lucianomenezes/.nvm/versions/**)",
+      "Read(//Users/lucianomenezes/.npm-global/bin/**)",
+      "Bash(\"/Users/lucianomenezes/Library/Application Support/Claude/claude-code/2.1.121/claude.app/Contents/MacOS/claude\" plugins install code-review@claude-plugins-official)",
+      "Bash(\"/Users/lucianomenezes/Library/Application Support/Claude/claude-code/2.1.121/claude.app/Contents/MacOS/claude\" plugins install context7@claude-plugins-official)",
+      "Bash(sw_vers)",
+      "Bash(npm --version)",
+      "Bash(git --version)",
+      "Bash(claude --version)",
+      "Bash(brew --version)",
+      "Bash(npm install *)",
+      "Bash(npm bin *)",
+      "Bash(npm prefix *)"
+    ]
+  }
+}
