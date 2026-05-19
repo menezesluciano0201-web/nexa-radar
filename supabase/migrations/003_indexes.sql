@@ -16,7 +16,8 @@ CREATE INDEX idx_transferencias_comp    ON transferencias_federais(competencia);
 -- Emendas — buscas por parlamentar, município e exercício
 CREATE INDEX idx_emendas_parlamentar ON emendas_parlamentares(parlamentar_id);
 CREATE INDEX idx_emendas_municipio   ON emendas_parlamentares(municipio_ibge);
-CREATE INDEX idx_emendas_tipo        ON emendas_parlamentares(parlamentar_tipo);
+CREATE INDEX idx_emendas_tipo           ON emendas_parlamentares(tipo);
+CREATE INDEX idx_emendas_parlamentar_tipo ON emendas_parlamentares(parlamentar_tipo);
 CREATE INDEX idx_emendas_exercicio   ON emendas_parlamentares(exercicio);
 
 -- Diagnósticos e briefings — busca por status (alertas de 'gerando' travado)

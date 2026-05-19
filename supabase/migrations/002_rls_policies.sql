@@ -15,18 +15,24 @@ ALTER TABLE scores_municipio_parlamentar ENABLE ROW LEVEL SECURITY;
 
 -- ─── FUNÇÕES HELPER ──────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION _user_tipo()
-RETURNS text LANGUAGE sql SECURITY DEFINER STABLE AS $$
-  SELECT tipo FROM profiles WHERE id = auth.uid()
+RETURNS text LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = ''
+AS $$
+  SELECT tipo FROM public.profiles WHERE id = auth.uid()
 $$;
 
 CREATE OR REPLACE FUNCTION _user_municipio()
-RETURNS text LANGUAGE sql SECURITY DEFINER STABLE AS $$
-  SELECT municipio_ibge FROM profiles WHERE id = auth.uid()
+RETURNS text LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = ''
+AS $$
+  SELECT municipio_ibge FROM public.profiles WHERE id = auth.uid()
 $$;
 
 CREATE OR REPLACE FUNCTION _user_parlamentar()
-RETURNS text LANGUAGE sql SECURITY DEFINER STABLE AS $$
-  SELECT parlamentar_id FROM profiles WHERE id = auth.uid()
+RETURNS text LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = ''
+AS $$
+  SELECT parlamentar_id FROM public.profiles WHERE id = auth.uid()
 $$;
 
 -- ─── PROFILES ────────────────────────────────────────────────────────────────
@@ -34,7 +40,8 @@ CREATE POLICY profiles_select ON profiles FOR SELECT
   USING (id = auth.uid() OR _user_tipo() = 'admin');
 
 CREATE POLICY profiles_update ON profiles FOR UPDATE
-  USING (id = auth.uid());
+  USING (id = auth.uid())
+  WITH CHECK (id = auth.uid() AND tipo = (SELECT tipo FROM profiles WHERE id = auth.uid()));
 
 -- ─── CONTRATOS ───────────────────────────────────────────────────────────────
 -- Cliente vê apenas o próprio contrato; admin vê todos
