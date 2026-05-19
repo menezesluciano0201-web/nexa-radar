@@ -34,19 +34,19 @@ def coletar_municipio(ibge: str, nome: str) -> None:
     rows_portal = coletar_transferencias(ibge, ANOS)
     if rows_portal:
         upsert("transferencias_federais", rows_portal,
-               on_conflict="municipio_ibge,programa,fonte")
+               on_conflict="municipio_ibge,programa,fonte,competencia")
 
     # Convênios Transferegov
     rows_tgov = coletar_convenios(ibge)
     if rows_tgov:
         upsert("transferencias_federais", rows_tgov,
-               on_conflict="municipio_ibge,programa,fonte")
+               on_conflict="municipio_ibge,programa,fonte,competencia")
 
     # FNDE
     rows_fnde = coletar_fnde(ibge, ANOS)
     if rows_fnde:
         upsert("transferencias_federais", rows_fnde,
-               on_conflict="municipio_ibge,programa,fonte")
+               on_conflict="municipio_ibge,programa,fonte,competencia")
 
     # Portais estaduais (semi-automático)
     uf = nome.split(" - ")[-1] if " - " in nome else ""

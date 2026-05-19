@@ -28,6 +28,27 @@ def test_coletar_fnde_retorna_rows_para_um_programa():
 
 
 @resp_mock.activate
+def test_coletar_fnde_multi_ano_competencia_correta():
+    """Dois anos de coleta devem gerar competencias distintas."""
+    for slug in PROGRAMAS_FNDE.values():
+        # 2024 response
+        resp_mock.add(resp_mock.GET, f"{BASE}/{slug}",
+                      json=[{"valorRepasse": "100000.00", "valorEfetivado": "80000.00"}],
+                      status=200)
+        # 2025 response
+        resp_mock.add(resp_mock.GET, f"{BASE}/{slug}",
+                      json=[{"valorRepasse": "120000.00", "valorEfetivado": "90000.00"}],
+                      status=200)
+
+    rows = coletar_fnde("2803500", [2024, 2025])
+
+    competencias = {r["competencia"] for r in rows}
+    assert "2024-01-01" in competencias
+    assert "2025-01-01" in competencias
+    assert len(rows) == len(PROGRAMAS_FNDE) * 2
+
+
+@resp_mock.activate
 def test_coletar_fnde_api_error_retorna_lista_vazia():
     for slug in PROGRAMAS_FNDE.values():
         resp_mock.add(resp_mock.GET, f"{BASE}/{slug}",

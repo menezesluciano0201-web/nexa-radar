@@ -5,6 +5,7 @@ Sem autenticação para leitura pública.
 """
 import time
 import logging
+from datetime import date
 import requests
 from scraper.config import RATE_LIMIT_SECONDS, USER_AGENT
 
@@ -52,7 +53,6 @@ def _extrair_competencia(r: dict) -> str:
                     return f"{ano}-01-01"
             except (ValueError, TypeError):
                 pass
-    from datetime import date
     return f"{date.today().year}-01-01"
 
 

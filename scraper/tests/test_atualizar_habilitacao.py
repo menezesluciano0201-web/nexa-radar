@@ -1,5 +1,5 @@
 # scraper/tests/test_atualizar_habilitacao.py
-from unittest.mock import patch, call
+from unittest.mock import patch
 from scraper.processors.atualizar_habilitacao import (
     atualizar_programas_habilitados,
     marcar_cauc_irregular,
