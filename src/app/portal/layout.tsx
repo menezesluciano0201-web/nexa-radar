@@ -6,6 +6,8 @@ import { LogOut, Home, FileText, Bell, TrendingDown } from 'lucide-react'
 import Link from 'next/link'
 import type { UserTipo } from '@/types'
 
+const VALID_TIPOS: UserTipo[] = ['prefeito', 'deputado', 'senador', 'oscip']
+
 function getNavItems(tipo: UserTipo) {
   const base = [
     { href: '/portal', label: 'Início', icon: Home },
@@ -39,7 +41,10 @@ export default async function PortalLayout({
   if (!profile) redirect('/login')
   if (profile.tipo === 'admin') redirect('/admin')
 
-  const navItems = getNavItems(profile.tipo as UserTipo)
+  const tipo = VALID_TIPOS.includes(profile.tipo as UserTipo)
+    ? (profile.tipo as UserTipo)
+    : ('oscip' as UserTipo)
+  const navItems = getNavItems(tipo)
 
   return (
     <div className="min-h-screen bg-slate-900">
