@@ -49,15 +49,18 @@ def coletar_emendas_individuais(ano: int) -> list[dict]:
 
     rows: list[dict] = []
     for b in results["results"]["bindings"]:
+        ibge = b.get("codigoIbge", {}).get("value")
+        if not ibge:
+            continue  # skip emendas sem município vinculado
         rows.append({
-            "parlamentar_id":   b["autoria"]["value"],
-            "parlamentar_nome": b["nomeAutor"]["value"],
+            "parlamentar_id":   b.get("autoria", {}).get("value", "DESCONHECIDO"),
+            "parlamentar_nome": b.get("nomeAutor", {}).get("value", ""),
             "tipo":             "RP6",
             "parlamentar_tipo": "individual",
-            "municipio_ibge":   b["codigoIbge"]["value"],
-            "area_tematica":    b["area"]["value"].lower(),
-            "valor_autorizado": float(b["valorAutorizado"]["value"] or 0),
-            "valor_empenhado":  float(b["valorEmpenhado"]["value"] or 0),
+            "municipio_ibge":   ibge,
+            "area_tematica":    (b.get("area", {}).get("value") or "").lower(),
+            "valor_autorizado": float((b.get("valorAutorizado") or {}).get("value") or 0),
+            "valor_empenhado":  float((b.get("valorEmpenhado") or {}).get("value") or 0),
             "valor_executado":  0.0,
             "exercicio":        ano,
             "fonte":            "siga_brasil",

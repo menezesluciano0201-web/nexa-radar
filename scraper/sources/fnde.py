@@ -30,9 +30,10 @@ def _get_programa(programa_slug: str, ibge: str, ano: int) -> list[dict]:
             timeout=30,
         )
         r.raise_for_status()
-        return r.json() if isinstance(r.json(), list) else []
+        data = r.json()
+        return data if isinstance(data, list) else []
     except requests.RequestException as e:
-        log.warning("FNDE %s | %s | %s", programa_slug, ibge, e)
+        log.error("FNDE %s | %s | %s", programa_slug, ibge, e)
         return []
     finally:
         time.sleep(RATE_LIMIT_SECONDS)

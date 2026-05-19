@@ -61,8 +61,8 @@ def coletar_transferencias(ibge: str, anos: list[int]) -> list[dict]:
         for r in registros:
             rows.append({
                 "municipio_ibge":  ibge,
-                "programa":        r.get("programa", {}).get("nome", "DESCONHECIDO"),
-                "fundo":           r.get("orgaoSuperior", {}).get("nome", "FEDERAL"),
+                "programa":        (r.get("programa") or {}).get("nome", "DESCONHECIDO"),
+                "fundo":           (r.get("orgaoSuperior") or {}).get("nome", "FEDERAL"),
                 "valor_empenhado": float(r.get("valorEmpenhado") or 0),
                 "valor_liquidado": float(r.get("valorLiquidado") or 0),
                 "valor_pago":      float(r.get("valorPago") or 0),

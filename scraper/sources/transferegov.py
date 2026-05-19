@@ -48,8 +48,8 @@ def coletar_convenios(ibge: str) -> list[dict]:
     for r in registros:
         rows.append({
             "municipio_ibge":  ibge,
-            "programa":        r.get("objeto", "CONVENIO")[:100],
-            "fundo":           r.get("orgaoSuperior", {}).get("nome", "FEDERAL"),
+            "programa":        (r.get("objeto") or "CONVENIO")[:100],
+            "fundo":           (r.get("orgaoSuperior") or {}).get("nome", "FEDERAL"),
             "valor_empenhado": float(r.get("valorGlobal") or 0),
             "valor_liquidado": float(r.get("valorDesembolsado") or 0),
             "valor_pago":      float(r.get("valorDesembolsado") or 0),
