@@ -44,8 +44,8 @@ def coletar_emendas_individuais(ano: int) -> list[dict]:
     except Exception as e:
         log.error("SIGA Brasil SPARQL erro: %s", e)
         return []
-
-    time.sleep(RATE_LIMIT_SECONDS)
+    finally:
+        time.sleep(RATE_LIMIT_SECONDS)
 
     rows: list[dict] = []
     for b in results["results"]["bindings"]:

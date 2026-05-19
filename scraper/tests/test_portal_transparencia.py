@@ -1,6 +1,5 @@
 # scraper/tests/test_portal_transparencia.py
 import responses as resp_mock
-import pytest
 from scraper.sources.portal_transparencia import coletar_transferencias
 
 PORTAL_URL = "https://api.portaldatransparencia.gov.br/api-de-dados/transferencias-voluntarias"

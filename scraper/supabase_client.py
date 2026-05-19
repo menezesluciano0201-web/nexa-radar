@@ -60,6 +60,8 @@ def select(table: str, filters: Optional[dict] = None, columns: str = "*") -> li
             params=params,
             timeout=30,
         )
+        if r.status_code == 416:
+            break  # PostgREST: range starts beyond last row — done
         if r.status_code not in (200, 206):
             log.error("Supabase select error table=%s status=%s body=%s",
                       table, r.status_code, r.text[:200])
