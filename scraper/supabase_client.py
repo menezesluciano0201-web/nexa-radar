@@ -4,6 +4,7 @@ Supabase client using REST API directly.
 Uses requests instead of supabase-py to support the sb_secret_... key format.
 """
 import logging
+from typing import Optional
 import requests
 from scraper.config import SUPABASE_URL, SUPABASE_KEY
 
@@ -41,7 +42,7 @@ def upsert(table: str, rows: list[dict], on_conflict: str) -> None:
         r.raise_for_status()
 
 
-def select(table: str, filters: dict | None = None, columns: str = "*") -> list[dict]:
+def select(table: str, filters: Optional[dict] = None, columns: str = "*") -> list[dict]:
     """Select rows from table with optional equality filters."""
     params: dict = {"select": columns}
     if filters:
