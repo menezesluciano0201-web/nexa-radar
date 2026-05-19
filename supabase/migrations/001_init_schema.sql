@@ -17,7 +17,8 @@ CREATE TABLE contratos (
   id           uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   profile_id   uuid REFERENCES profiles NOT NULL,
   tipo_produto text NOT NULL CHECK (tipo_produto IN (
-    'diagnostico','monitoramento_prefeito','monitoramento_parlamentar'
+    'diagnostico','monitoramento_prefeito','monitoramento_parlamentar',
+    'prestacao_contas','licenca_plataforma'
   )),
   status       text NOT NULL DEFAULT 'ativo' CHECK (status IN ('ativo','suspenso','encerrado')),
   valor_mensal numeric,
@@ -81,7 +82,7 @@ CREATE TABLE municipios_habilitacao (
   uf                    text NOT NULL,
   populacao             int,
   idh                   numeric,
-  cauc_regular          boolean DEFAULT true,
+  cauc_regular          boolean NOT NULL DEFAULT true,
   ultima_verificacao    timestamptz,
   programas_habilitados text[] NOT NULL DEFAULT '{}',
   programas_bloqueados  text[] NOT NULL DEFAULT '{}'
@@ -142,11 +143,11 @@ CREATE TABLE scores_municipio_parlamentar (
   parlamentar_id       text NOT NULL,
   municipio_ibge       text NOT NULL,
   score_total          numeric CHECK (score_total BETWEEN 0 AND 100),
-  score_politico       numeric,
-  score_saude_alocacao numeric,
-  score_capacidade     numeric,
-  score_impacto_visual numeric,
-  score_idh            numeric,
+  score_politico       numeric CHECK (score_politico BETWEEN 0 AND 100),
+  score_saude_alocacao numeric CHECK (score_saude_alocacao BETWEEN 0 AND 100),
+  score_capacidade     numeric CHECK (score_capacidade BETWEEN 0 AND 100),
+  score_impacto_visual numeric CHECK (score_impacto_visual BETWEEN 0 AND 100),
+  score_idh            numeric CHECK (score_idh BETWEEN 0 AND 100),
   calculado_em         timestamptz NOT NULL DEFAULT now(),
   UNIQUE (parlamentar_id, municipio_ibge)
 );
@@ -169,12 +170,18 @@ CREATE TABLE cnds_municipios (
   tipo            text NOT NULL,
   status          text NOT NULL CHECK (status IN ('valida','irregular','vencendo','vencida')),
   validade        date,
-  dias_restantes  int GENERATED ALWAYS AS (
-    CASE WHEN validade IS NOT NULL THEN (validade - CURRENT_DATE) ELSE NULL END
-  ) STORED,
-  alerta          boolean GENERATED ALWAYS AS (
-    status != 'valida' OR (validade IS NOT NULL AND (validade - CURRENT_DATE) < 30)
-  ) STORED,
   verificado_em   timestamptz NOT NULL DEFAULT now(),
   UNIQUE (municipio_ibge, tipo)
 );
+-- dias_restantes e alerta são calculados na aplicação: (validade - CURRENT_DATE) e status != 'valida'
+-- GENERATED ALWAYS AS STORED não suporta CURRENT_DATE (não-imutável no PostgreSQL 15)
+
+-- ─── UNIQUE CONSTRAINTS PARA UPSERT DOS SCRAPERS ────────────────────────────
+-- Necessário para on_conflict funcionar corretamente no supabase-py
+ALTER TABLE transferencias_federais
+  ADD CONSTRAINT uq_transferencias_ibge_programa_fonte
+  UNIQUE (municipio_ibge, programa, fonte);
+
+ALTER TABLE emendas_parlamentares
+  ADD CONSTRAINT uq_emendas_parlamentar_municipio_exercicio_fonte
+  UNIQUE (parlamentar_id, municipio_ibge, exercicio, fonte);
