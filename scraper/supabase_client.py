@@ -31,6 +31,7 @@ def upsert(table: str, rows: list[dict], on_conflict: str) -> None:
     r = requests.post(
         _rest_url(table),
         headers=headers,
+        params={"on_conflict": on_conflict},
         json=rows,
         timeout=30,
     )
@@ -51,5 +52,8 @@ def select(table: str, filters: dict | None = None, columns: str = "*") -> list[
         params=params,
         timeout=30,
     )
-    r.raise_for_status()
+    if r.status_code not in (200, 206):
+        log.error("Supabase select error table=%s status=%s body=%s",
+                  table, r.status_code, r.text[:200])
+        r.raise_for_status()
     return r.json()
