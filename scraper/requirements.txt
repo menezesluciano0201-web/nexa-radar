@@ -1,4 +1,5 @@
-supabase==2.9.0
+# supabase-py NOT used — service role key format sb_secret_... incompatible with 2.9.0
+# Supabase is accessed via REST API (requests) directly in supabase_client.py
 requests==2.32.3
 SPARQLWrapper==2.0.0
 pandas==2.2.2

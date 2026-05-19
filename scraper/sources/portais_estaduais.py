@@ -5,8 +5,9 @@ O scraper tenta coletar; analista Nexa valida antes de publicar no painel.
 Erros de scraping são esperados — portais mudam de layout sem aviso.
 """
 import logging
+import time
 import requests
-from scraper.config import USER_AGENT
+from scraper.config import USER_AGENT, RATE_LIMIT_SECONDS
 
 log = logging.getLogger(__name__)
 
@@ -39,6 +40,8 @@ def tentar_coletar_estadual(uf: str, ibge: str) -> list[dict]:
     except requests.RequestException as e:
         log.warning("Portal estadual %s indisponível: %s — requer validação manual", uf, e)
         return []
+    finally:
+        time.sleep(RATE_LIMIT_SECONDS)
 
 
 def registrar_pendencia_manual(ibge: str, uf: str, descricao: str) -> None:

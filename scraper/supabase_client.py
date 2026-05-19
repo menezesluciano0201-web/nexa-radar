@@ -43,18 +43,33 @@ def upsert(table: str, rows: list[dict], on_conflict: str) -> None:
 
 
 def select(table: str, filters: Optional[dict] = None, columns: str = "*") -> list[dict]:
-    """Select rows from table with optional equality filters."""
-    params: dict = {"select": columns}
-    if filters:
-        params.update({k: f"eq.{v}" for k, v in filters.items()})
-    r = requests.get(
-        _rest_url(table),
-        headers=_HEADERS,
-        params=params,
-        timeout=30,
-    )
-    if r.status_code not in (200, 206):
-        log.error("Supabase select error table=%s status=%s body=%s",
-                  table, r.status_code, r.text[:200])
-        r.raise_for_status()
-    return r.json()
+    """Select all rows from table with optional equality filters (auto-paginates)."""
+    PAGE_SIZE = 1000
+    all_rows: list[dict] = []
+    offset = 0
+
+    while True:
+        params: dict = {"select": columns}
+        if filters:
+            params.update({k: f"eq.{v}" for k, v in filters.items()})
+
+        r = requests.get(
+            _rest_url(table),
+            headers={**_HEADERS, "Range-Unit": "items",
+                     "Range": f"{offset}-{offset + PAGE_SIZE - 1}"},
+            params=params,
+            timeout=30,
+        )
+        if r.status_code not in (200, 206):
+            log.error("Supabase select error table=%s status=%s body=%s",
+                      table, r.status_code, r.text[:200])
+            r.raise_for_status()
+
+        page = r.json()
+        all_rows.extend(page)
+
+        if len(page) < PAGE_SIZE:
+            break  # last page
+        offset += PAGE_SIZE
+
+    return all_rows

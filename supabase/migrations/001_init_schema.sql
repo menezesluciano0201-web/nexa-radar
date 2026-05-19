@@ -177,7 +177,7 @@ CREATE TABLE cnds_municipios (
 -- GENERATED ALWAYS AS STORED não suporta CURRENT_DATE (não-imutável no PostgreSQL 15)
 
 -- ─── UNIQUE CONSTRAINTS PARA UPSERT DOS SCRAPERS ────────────────────────────
--- Necessário para on_conflict funcionar corretamente no supabase-py
+-- Necessário para on_conflict funcionar corretamente via PostgREST REST API
 ALTER TABLE transferencias_federais
   ADD CONSTRAINT uq_transferencias_ibge_programa_fonte
   UNIQUE (municipio_ibge, programa, fonte, competencia);

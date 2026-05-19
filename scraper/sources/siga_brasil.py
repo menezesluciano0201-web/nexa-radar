@@ -65,5 +65,10 @@ def coletar_emendas_individuais(ano: int) -> list[dict]:
             "exercicio":        ano,
             "fonte":            "siga_brasil",
         })
+    if len(rows) >= 10000:
+        log.warning(
+            "SIGA Brasil | %d | LIMIT 10000 atingido — resultados podem estar incompletos",
+            ano,
+        )
     log.info("SIGA Brasil | %d | %d emendas individuais", ano, len(rows))
     return rows

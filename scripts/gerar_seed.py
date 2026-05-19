@@ -3,8 +3,6 @@
 Gera supabase/seed.sql com todos os municípios brasileiros via API IBGE.
 Execução única: python scripts/gerar_seed.py
 """
-import json
-import time
 import requests
 from pathlib import Path
 
