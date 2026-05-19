@@ -1,7 +1,8 @@
 # scraper/tests/test_transferegov.py
 import responses as resp_mock
 import requests as req_lib
-from scraper.sources.transferegov import coletar_convenios
+from datetime import date
+from scraper.sources.transferegov import coletar_convenios, _extrair_competencia
 
 TGOV_URL = "https://api.transferegov.sistema.gov.br/api/convenios"
 
@@ -25,7 +26,20 @@ def test_coletar_convenios_retorna_rows_normalizadas():
     assert rows[0]["valor_empenhado"] == 500000.0
     assert rows[0]["valor_pago"] == 300000.0
     assert rows[0]["fonte"] == "transferegov"
-    assert rows[0]["competencia"] is None
+    # No date fields in mock → falls back to current year; must never be None
+    assert rows[0]["competencia"] == f"{date.today().year}-01-01"
+
+
+def test_extrair_competencia_usa_dataAssinatura():
+    assert _extrair_competencia({"dataAssinatura": "2024-03-15"}) == "2024-01-01"
+
+
+def test_extrair_competencia_fallback_dataFimVigencia():
+    assert _extrair_competencia({"dataAssinatura": None, "dataFimVigencia": "2023-12-31"}) == "2023-01-01"
+
+
+def test_extrair_competencia_fallback_ano_corrente():
+    assert _extrair_competencia({}) == f"{date.today().year}-01-01"
 
 
 @resp_mock.activate

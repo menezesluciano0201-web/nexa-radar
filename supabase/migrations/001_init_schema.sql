@@ -181,7 +181,7 @@ CREATE TABLE cnds_municipios (
 ALTER TABLE transferencias_federais
   ADD CONSTRAINT uq_transferencias_ibge_programa_fonte
   UNIQUE (municipio_ibge, programa, fonte, competencia);
--- competencia = NULL groups all transfers without date into one slot (acceptable default)
+-- competencia must be populated by all sources; NULL values do NOT trigger unique conflicts in PostgreSQL (NULL != NULL)
 -- Each source should populate competencia with the reference date (e.g., '2024-01-01')
 
 ALTER TABLE emendas_parlamentares

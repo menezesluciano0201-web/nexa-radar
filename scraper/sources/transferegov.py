@@ -41,6 +41,21 @@ def _get(endpoint: str, params: dict) -> list[dict]:
     return results
 
 
+def _extrair_competencia(r: dict) -> str:
+    """Extract year from Transferegov response fields, fallback to current year."""
+    for campo in ("dataAssinatura", "dataFimVigencia", "dataPublicacao"):
+        val = r.get(campo)
+        if val and isinstance(val, str) and len(val) >= 4:
+            try:
+                ano = int(val[:4])
+                if 2000 <= ano <= 2100:
+                    return f"{ano}-01-01"
+            except (ValueError, TypeError):
+                pass
+    from datetime import date
+    return f"{date.today().year}-01-01"
+
+
 def coletar_convenios(ibge: str) -> list[dict]:
     """Retorna rows prontas para inserção em transferencias_federais."""
     registros = _get("convenios", {"codigoMunicipioIbge": ibge})
@@ -54,7 +69,7 @@ def coletar_convenios(ibge: str) -> list[dict]:
             "valor_liquidado": float(r.get("valorDesembolsado") or 0),
             "valor_pago":      float(r.get("valorDesembolsado") or 0),
             "fonte":           "transferegov",
-            "competencia":     None,
+            "competencia":     _extrair_competencia(r),
             "raw_json":        r,
         })
     log.info("Transferegov | %s | %d convênios", ibge, len(rows))
