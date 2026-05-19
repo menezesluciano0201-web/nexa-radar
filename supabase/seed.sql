@@ -5571,4 +5571,5 @@ INSERT INTO municipios_habilitacao (ibge, nome, uf, cauc_regular) VALUES
   ('5222054', 'Vicentinópolis', 'GO', true),
   ('5222203', 'Vila Boa', 'GO', true),
   ('5222302', 'Vila Propício', 'GO', true),
-  ('5300108', 'Brasília', 'DF', true);
+  ('5300108', 'Brasília', 'DF', true)
+ON CONFLICT (ibge) DO NOTHING;

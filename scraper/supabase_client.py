@@ -36,7 +36,7 @@ def upsert(table: str, rows: list[dict], on_conflict: str) -> None:
         json=rows,
         timeout=30,
     )
-    if r.status_code not in (200, 201):
+    if r.status_code not in (200, 201, 204):
         log.error("Supabase upsert error table=%s status=%s body=%s",
                   table, r.status_code, r.text[:200])
         r.raise_for_status()

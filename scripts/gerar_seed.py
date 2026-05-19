@@ -43,7 +43,7 @@ def build_sql(municipios: list[dict]) -> str:
         nome = m["nome"].replace("'", "''")
         uf   = uf_from_municipio(m)
         valores.append(f"  ('{ibge}', '{nome}', '{uf}', true)")
-    linhas.append(",\n".join(valores) + ";")
+    linhas.append(",\n".join(valores) + "\nON CONFLICT (ibge) DO NOTHING;")
     return "\n".join(linhas)
 
 

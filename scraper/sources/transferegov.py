@@ -54,6 +54,7 @@ def coletar_convenios(ibge: str) -> list[dict]:
             "valor_liquidado": float(r.get("valorDesembolsado") or 0),
             "valor_pago":      float(r.get("valorDesembolsado") or 0),
             "fonte":           "transferegov",
+            "competencia":     None,
             "raw_json":        r,
         })
     log.info("Transferegov | %s | %d convênios", ibge, len(rows))

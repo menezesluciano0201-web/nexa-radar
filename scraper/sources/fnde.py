@@ -54,6 +54,7 @@ def coletar_fnde(ibge: str, anos: list[int]) -> list[dict]:
                     "valor_liquidado": float(r.get("valorEfetivado") or 0),
                     "valor_pago":      float(r.get("valorEfetivado") or 0),
                     "fonte":           "fnde",
+                    "competencia":     f"{ano}-01-01",
                     "raw_json":        r,
                 })
     log.info("FNDE | %s | %d registros", ibge, len(rows))

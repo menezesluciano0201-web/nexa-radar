@@ -180,7 +180,9 @@ CREATE TABLE cnds_municipios (
 -- Necessário para on_conflict funcionar corretamente no supabase-py
 ALTER TABLE transferencias_federais
   ADD CONSTRAINT uq_transferencias_ibge_programa_fonte
-  UNIQUE (municipio_ibge, programa, fonte);
+  UNIQUE (municipio_ibge, programa, fonte, competencia);
+-- competencia = NULL groups all transfers without date into one slot (acceptable default)
+-- Each source should populate competencia with the reference date (e.g., '2024-01-01')
 
 ALTER TABLE emendas_parlamentares
   ADD CONSTRAINT uq_emendas_parlamentar_municipio_exercicio_fonte

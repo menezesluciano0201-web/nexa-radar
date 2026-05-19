@@ -67,6 +67,7 @@ def coletar_transferencias(ibge: str, anos: list[int]) -> list[dict]:
                 "valor_liquidado": float(r.get("valorLiquidado") or 0),
                 "valor_pago":      float(r.get("valorPago") or 0),
                 "fonte":           "portal_transparencia",
+                "competencia":     f"{ano}-01-01",
                 "raw_json":        r,
             })
     return rows
