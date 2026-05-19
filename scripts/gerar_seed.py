@@ -25,7 +25,10 @@ def uf_from_municipio(m: dict) -> str:
     # Fallback: regiao-imediata > regiao-intermediaria > UF (para municípios sem microrregião)
     regiao_imediata = m.get("regiao-imediata") or {}
     regiao_intermediaria = regiao_imediata.get("regiao-intermediaria") or {}
-    return regiao_intermediaria["UF"]["sigla"]
+    uf = regiao_intermediaria.get("UF", {}).get("sigla")
+    if not uf:
+        raise ValueError(f"Não foi possível resolver UF para: {m['nome']} (id={m['id']})")
+    return uf
 
 
 def build_sql(municipios: list[dict]) -> str:
