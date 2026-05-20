@@ -24,5 +24,6 @@ export async function marcarBriefingEntregue(formData: FormData) {
 
   revalidatePath(`/admin/briefing/${id}`)
   revalidatePath('/portal/briefing', 'page')
+  revalidatePath(`/portal/briefing/${id}`)
   redirect(`/admin/briefing/${id}`)
 }

@@ -35,7 +35,7 @@ export default async function PortalEmendasPage() {
     .limit(500)
 
   const totalAutorizado = (emendas ?? []).reduce((s, e) => s + e.valor_autorizado, 0)
-  const totalEmRisco = (emendas ?? []).reduce((s, e) => s + (e.valor_autorizado - e.valor_executado), 0)
+  const totalEmRisco = (emendas ?? []).reduce((s, e) => s + Math.max(0, e.valor_autorizado - e.valor_executado), 0)
 
   return (
     <div>

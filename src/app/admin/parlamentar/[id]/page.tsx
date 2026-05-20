@@ -76,7 +76,7 @@ export default async function AdminParlamentarDetailPage({
         </div>
         <div className="rounded-md bg-slate-800 px-4 py-3">
           <p className="text-xs text-slate-500 mb-1">Em risco</p>
-          <p className="text-lg font-bold text-risk-high">{brl(totalAutorizado - totalExecutado)}</p>
+          <p className="text-lg font-bold text-risk-high">{brl(Math.max(0, totalAutorizado - totalExecutado))}</p>
         </div>
       </div>
 

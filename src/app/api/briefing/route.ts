@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   if (!body.parlamentar_id)
     return NextResponse.json({ error: 'parlamentar_id required' }, { status: 400 })
-  if (body.parlamentar_id.length > 50 || !/^[A-Za-z0-9_\-.]{1,50}$/.test(body.parlamentar_id))
+  if (!/^[A-Za-z0-9_\-.]{1,50}$/.test(body.parlamentar_id))
     return NextResponse.json({ error: 'parlamentar_id invalid format' }, { status: 400 })
 
   const admin = createAdminClient()

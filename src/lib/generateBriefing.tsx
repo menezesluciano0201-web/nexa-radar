@@ -49,7 +49,7 @@ export async function generateBriefing(
 
     const parlamentarNome = emendasList[0].parlamentar_nome ?? parlamentarId
 
-    // 2. Calcular risco e scores
+    // 3. Calcular risco e scores
     const risco = calcularRiscoBriefing(emendasList)
     const top5 = calcularScoresMunicipios(emendasList, municipiosList)
 
@@ -62,7 +62,7 @@ export async function generateBriefing(
         }
       : null
 
-    // 3. Gerar texto com Claude
+    // 4. Gerar texto com Claude
     const textoIA = await gerarBriefingParlamentar({
       parlamentarNome,
       totalEmendas: risco.valorTotalEmendas,
@@ -76,7 +76,7 @@ export async function generateBriefing(
       })),
     })
 
-    // 4. Gerar PDF
+    // 5. Gerar PDF
     const now = new Date()
     const pad = (n: number) => String(n).padStart(2, '0')
     const geradoEm = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`
@@ -93,7 +93,7 @@ export async function generateBriefing(
       }) as React.ReactElement<DocumentProps>
     )
 
-    // 5. Upload para Storage
+    // 6. Upload para Storage
     const filename = `briefing-${id}.pdf`
     const { error: uploadError } = await admin.storage
       .from('relatorios')
@@ -101,7 +101,7 @@ export async function generateBriefing(
 
     if (uploadError) throw uploadError
 
-    // 6. Atualizar registro
+    // 7. Atualizar registro
     const { error: updateError } = await admin
       .from('briefings')
       .update({

@@ -24,7 +24,7 @@ export function calcularRiscoBriefing(emendas: EmendaParlamentar[]): RiscoBriefi
     .map((e) => ({
       municipio: e.municipio_ibge!,
       prazo: String(e.prazo_limite),
-      valor: e.valor_autorizado - e.valor_executado,
+      valor: Math.max(0, e.valor_autorizado - e.valor_executado),
       dias: Math.floor(
         (new Date(String(e.prazo_limite) + 'T12:00:00Z').getTime() - hoje.getTime()) / 86_400_000
       ),
