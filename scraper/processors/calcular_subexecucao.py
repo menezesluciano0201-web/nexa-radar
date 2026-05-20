@@ -46,9 +46,12 @@ def calcular_por_municipio(ibge: str) -> list[SubexecucaoPrograma]:
 
         em_risco = pct < 70.0
         if prazo:
-            dias = (date.fromisoformat(prazo) - date.today()).days
-            if dias <= PRAZO_ALERTA_DIAS:
-                em_risco = True
+            try:
+                dias = (date.fromisoformat(str(prazo)) - date.today()).days
+                if dias <= PRAZO_ALERTA_DIAS:
+                    em_risco = True
+            except (ValueError, TypeError):
+                log.warning("Subexecução | %s | prazo_limite inválido: %r", ibge, prazo)
 
         if em_risco:
             resultado.append(SubexecucaoPrograma(

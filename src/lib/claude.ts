@@ -7,7 +7,7 @@ const anthropic = new Anthropic({
   timeout: 30_000,
 })
 
-const MODEL = 'claude-sonnet-4-20250514'
+const MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-20250514'
 const MAX_TOKENS = 4096
 
 export async function gerarTexto(prompt: string): Promise<string> {

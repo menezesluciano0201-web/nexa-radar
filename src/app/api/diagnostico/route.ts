@@ -29,7 +29,12 @@ export async function POST(request: NextRequest) {
   }
 
   // 3. Validar body
-  const body = (await request.json()) as { municipio_ibge?: string }
+  let body: { municipio_ibge?: string }
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
   if (!body.municipio_ibge) {
     return NextResponse.json({ error: 'municipio_ibge required' }, { status: 400 })
   }

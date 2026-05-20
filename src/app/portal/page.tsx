@@ -13,10 +13,12 @@ export default async function PortalHomePage() {
     .eq('id', user.id)
     .single()
 
+  if (!profile) redirect('/login')
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-100 mb-2">
-        Olá, {profile?.nome}
+        Olá, {profile.nome}
       </h1>
       <p className="text-slate-400 text-sm">
         Seu portal está sendo configurado. As funcionalidades serão adicionadas em breve.

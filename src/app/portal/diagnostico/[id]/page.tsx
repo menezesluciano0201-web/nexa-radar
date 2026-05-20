@@ -1,7 +1,6 @@
 // src/app/portal/diagnostico/[id]/page.tsx
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import type { ProgramaCritico } from '@/types'
 
 export default async function PortalDiagnosticoDetailPage({
@@ -23,11 +22,10 @@ export default async function PortalDiagnosticoDetailPage({
 
   const programasCriticos = (diagnostico.programas_criticos ?? []) as ProgramaCritico[]
 
-  // Gerar signed URL (bucket privado, válida por 1h); usa admin client pois RLS já validou acesso acima
+  // Signed URL via user client — storage RLS (migration 006) valida o acesso por município
   let pdfSignedUrl: string | null = null
   if (diagnostico.pdf_url) {
-    const admin = createAdminClient()
-    const { data } = await admin.storage
+    const { data } = await supabase.storage
       .from('relatorios')
       .createSignedUrl(diagnostico.pdf_url, 3600)
     pdfSignedUrl = data?.signedUrl ?? null

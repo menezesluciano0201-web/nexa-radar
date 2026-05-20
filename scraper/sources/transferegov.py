@@ -34,7 +34,13 @@ def _get(endpoint: str, params: dict) -> list[dict]:
         except requests.RequestException as e:
             log.error("Transferegov erro em %s: %s", endpoint, e)
             break
-        items = data if isinstance(data, list) else data.get("data", [])
+        if isinstance(data, list):
+            items = data
+        else:
+            items = data.get("data", [])
+            if not isinstance(items, list):
+                log.warning("Transferegov | %s | resposta inesperada: %s", endpoint, str(data)[:100])
+                items = []
         if not items:
             break
         results.extend(items)
