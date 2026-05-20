@@ -5,8 +5,11 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function marcarDiagnosticoEntregue(formData: FormData) {
-  const id = formData.get('id') as string
+  const id = (formData.get('id') as string | null) ?? ''
+  if (!UUID_RE.test(id)) redirect('/admin')
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

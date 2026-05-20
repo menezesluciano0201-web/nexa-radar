@@ -50,8 +50,9 @@ def coletar_emendas_individuais(ano: int) -> list[dict]:
     rows: list[dict] = []
     bindings: list[dict] = results.get("results", {}).get("bindings", [])
     if len(bindings) >= 10000:
-        log.warning(
-            "SIGA Brasil | %d | LIMIT 10000 atingido nos bindings brutos — resultados podem estar incompletos",
+        log.error(
+            "SIGA Brasil | %d | LIMIT 10000 atingido — emendas podem estar INCOMPLETAS. "
+            "Implementar paginação OFFSET/LIMIT no SPARQL.",
             ano,
         )
     skipped_ibge = 0

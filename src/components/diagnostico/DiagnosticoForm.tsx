@@ -60,7 +60,10 @@ export default function DiagnosticoForm({ municipios }: Props) {
       )
       .subscribe()
 
-    // Polling fallback a cada 5s
+    // Polling fallback a cada 5s.
+    // NOTE: GET /api/diagnostico/{id} is admin-only (403 for non-admins).
+    // This component is only rendered from the admin panel, so this is correct.
+    // If reused on the portal, use Realtime as the sole status mechanism.
     pollRef.current = setInterval(async () => {
       try {
         const res = await fetch(`/api/diagnostico/${diagnosticoId}`)

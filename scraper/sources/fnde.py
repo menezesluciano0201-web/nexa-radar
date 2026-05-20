@@ -55,6 +55,8 @@ def coletar_fnde(ibge: str, anos: list[int]) -> list[dict]:
                     "valor_pago":      float(r.get("valorEfetivado") or 0),
                     "fonte":           "fnde",
                     "competencia":     f"{ano}-01-01",
+                    # prazo_limite: FNDE API does not expose a deadline field —
+                    # deadline-based risk detection will not fire for FNDE programs.
                     "raw_json":        r,
                 })
     log.info("FNDE | %s | %d registros", ibge, len(rows))
