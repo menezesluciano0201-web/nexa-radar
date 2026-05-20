@@ -1,5 +1,5 @@
 // src/app/portal/diagnostico/[id]/page.tsx
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { ProgramaCritico } from '@/types'
 
@@ -10,6 +10,8 @@ export default async function PortalDiagnosticoDetailPage({
 }) {
   const { id } = await params
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   // RLS scopes by municipio_ibge. Status filter here prevents fetching draft data before the notFound check.
   const { data: diagnostico } = await supabase

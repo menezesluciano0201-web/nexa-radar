@@ -44,23 +44,31 @@ export async function POST(request: NextRequest) {
 
   // 3b. Verificar que o município existe — evita criar row 'gerando' que nunca resolve
   const admin = createAdminClient()
-  const { count } = await admin
+  const { count, error: countErr } = await admin
     .from('municipios_habilitacao')
     .select('ibge', { count: 'exact', head: true })
     .eq('ibge', body.municipio_ibge)
 
-  if (!count) {
+  if (countErr) {
+    console.error('[POST /api/diagnostico] municipio lookup error:', countErr.message)
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  }
+  if (count === 0) {
     return NextResponse.json({ error: 'Município não encontrado' }, { status: 404 })
   }
 
   // 3c. Dedup: impedir spam de geração para o mesmo município
-  const { count: gerando } = await admin
+  const { count: gerando, error: dedupErr } = await admin
     .from('diagnosticos')
     .select('id', { count: 'exact', head: true })
     .eq('municipio_ibge', body.municipio_ibge)
     .eq('status', 'gerando')
 
-  if (gerando && gerando > 0) {
+  if (dedupErr) {
+    console.error('[POST /api/diagnostico] dedup check error:', dedupErr.message)
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  }
+  if (gerando !== null && gerando > 0) {
     return NextResponse.json(
       { error: 'Já existe um diagnóstico em geração para este município' },
       { status: 409 }

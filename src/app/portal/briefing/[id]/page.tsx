@@ -1,5 +1,5 @@
 // src/app/portal/briefing/[id]/page.tsx
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { MunicipioRecomendado } from '@/types'
 
@@ -14,6 +14,8 @@ export default async function PortalBriefingDetailPage({
 }) {
   const { id } = await params
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   // RLS (migration 002) scopes by parlamentar_id. Status filter prevents fetching draft data before notFound.
   const { data: briefing } = await supabase

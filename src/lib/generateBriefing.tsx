@@ -47,7 +47,10 @@ export async function generateBriefing(
     const municipiosList = (municipios ?? []) as MunicipioHabilitacao[]
     if (!municipiosList.length) console.warn('[generateBriefing] id=%s: nenhum município encontrado em municipios_habilitacao — top5 será []', id)
 
-    const parlamentarNome = emendasList[0].parlamentar_nome ?? parlamentarId
+    const parlamentarNome = emendasList[0].parlamentar_nome ?? (() => {
+      console.warn('[generateBriefing] id=%s: parlamentar_nome is null, using ID as display name', id)
+      return parlamentarId
+    })()
 
     // 3. Calcular risco e scores
     const risco = calcularRiscoBriefing(emendasList)

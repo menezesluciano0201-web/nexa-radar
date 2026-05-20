@@ -88,7 +88,7 @@ export async function generateDiagnostico(
     // 6. Ações recomendadas (top 5 programas)
     const acoes = programasCriticos.slice(0, 5).map(
       (p) =>
-        `Regularizar execução de ${p.programa}: ${brl(p.valor_empenhado - p.valor_pago)} parado`
+        `Regularizar execução de ${p.programa}: ${brl(Math.max(0, p.valor_empenhado - p.valor_pago))} parado`
     )
 
     // 7. Atualizar registro diagnosticos — armazena path (não URL pública, bucket é privado)

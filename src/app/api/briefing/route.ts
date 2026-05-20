@@ -28,22 +28,30 @@ export async function POST(request: NextRequest) {
   const admin = createAdminClient()
 
   // Verificar que existem emendas para este parlamentar
-  const { count: emendasCount } = await admin
+  const { count: emendasCount, error: emendasErr } = await admin
     .from('emendas_parlamentares')
     .select('id', { count: 'exact', head: true })
     .eq('parlamentar_id', body.parlamentar_id)
 
-  if (!emendasCount)
+  if (emendasErr) {
+    console.error('[POST /api/briefing] emendas lookup error:', emendasErr.message)
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  }
+  if (emendasCount === 0)
     return NextResponse.json({ error: 'Parlamentar não encontrado ou sem emendas' }, { status: 404 })
 
   // Dedup: impedir geração simultânea para o mesmo parlamentar
-  const { count: gerando } = await admin
+  const { count: gerando, error: dedupErr } = await admin
     .from('briefings')
     .select('id', { count: 'exact', head: true })
     .eq('parlamentar_id', body.parlamentar_id)
     .eq('status', 'gerando')
 
-  if (gerando && gerando > 0)
+  if (dedupErr) {
+    console.error('[POST /api/briefing] dedup check error:', dedupErr.message)
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  }
+  if (gerando !== null && gerando > 0)
     return NextResponse.json(
       { error: 'Já existe um briefing em geração para este parlamentar' },
       { status: 409 }

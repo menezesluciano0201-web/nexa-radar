@@ -61,7 +61,7 @@ export default async function PortalEmendasPage() {
               </div>
               <div className="text-right">
                 <p className="text-sm font-mono text-slate-300">{brl(e.valor_autorizado)}</p>
-                <p className="text-xs text-slate-500">{e.percentual_execucao}% executado</p>
+                <p className="text-xs text-slate-500">{Number(e.percentual_execucao).toFixed(1)}% executado</p>
               </div>
             </div>
           ))}
