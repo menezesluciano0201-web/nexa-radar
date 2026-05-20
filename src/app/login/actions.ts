@@ -22,8 +22,9 @@ export async function signIn(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
-  // Prevent open redirect — only allow relative internal paths
-  redirect(next && next.startsWith('/') ? next : '/')
+  // Prevent open redirect — require relative path that cannot be protocol-relative (//evil.com)
+  const safeNext = next && next.startsWith('/') && !next.startsWith('//')
+  redirect(safeNext ? next : '/')
 }
 
 export async function signOut() {

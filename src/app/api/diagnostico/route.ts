@@ -34,8 +34,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'municipio_ibge required' }, { status: 400 })
   }
 
-  // 4. Criar registro com status='gerando'
+  // 3b. Verificar que o município existe — evita criar row 'gerando' que nunca resolve
   const admin = createAdminClient()
+  const { count } = await admin
+    .from('municipios_habilitacao')
+    .select('ibge', { count: 'exact', head: true })
+    .eq('ibge', body.municipio_ibge)
+
+  if (!count) {
+    return NextResponse.json({ error: 'Município não encontrado' }, { status: 404 })
+  }
+
+  // 4. Criar registro com status='gerando'
   const { data: diagnostico, error } = await admin
     .from('diagnosticos')
     .insert({

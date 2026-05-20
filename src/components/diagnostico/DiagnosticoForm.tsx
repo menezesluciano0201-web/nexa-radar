@@ -32,6 +32,13 @@ export default function DiagnosticoForm({ municipios }: Props) {
 
     const supabase = createClient()
 
+    // cleanup declarado primeiro para evitar uso antes da declaração
+    function cleanup() {
+      channel.unsubscribe()
+      if (pollRef.current) clearInterval(pollRef.current)
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+
     // Realtime subscription
     const channel = supabase
       .channel(`diagnostico-${diagnosticoId}`)
@@ -73,12 +80,6 @@ export default function DiagnosticoForm({ municipios }: Props) {
       cleanup()
       setStatus('timeout')
     }, 120_000)
-
-    function cleanup() {
-      channel.unsubscribe()
-      if (pollRef.current) clearInterval(pollRef.current)
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    }
 
     return () => cleanup()
   }, [diagnosticoId])

@@ -27,7 +27,7 @@ def upsert(table: str, rows: list[dict], on_conflict: str) -> None:
         return
     headers = {
         **_HEADERS,
-        "Prefer": f"resolution=merge-duplicates,return=minimal",
+        "Prefer": "resolution=merge-duplicates,return=minimal",
     }
     r = requests.post(
         _rest_url(table),

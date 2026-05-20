@@ -107,10 +107,12 @@ export async function generateDiagnostico(
     if (updateError) throw updateError
   } catch (err) {
     console.error(`[generateDiagnostico] id=${id}:`, err)
+    // Só marca erro se ainda estiver 'gerando' — evita sobrescrever uma conclusão bem-sucedida
     await admin
       .from('diagnosticos')
       .update({ status: 'erro' })
       .eq('id', id)
+      .eq('status', 'gerando')
       .then(() => {}, (e) => console.error(`[generateDiagnostico] falha ao marcar erro id=${id}:`, e))
   }
 }

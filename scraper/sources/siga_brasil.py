@@ -48,7 +48,12 @@ def coletar_emendas_individuais(ano: int) -> list[dict]:
         time.sleep(RATE_LIMIT_SECONDS)
 
     rows: list[dict] = []
-    bindings = results.get("results", {}).get("bindings", [])
+    bindings: list[dict] = results.get("results", {}).get("bindings", [])
+    if len(bindings) >= 10000:
+        log.warning(
+            "SIGA Brasil | %d | LIMIT 10000 atingido nos bindings brutos — resultados podem estar incompletos",
+            ano,
+        )
     for b in bindings:
         ibge = b.get("codigoIbge", {}).get("value")
         if not ibge:
@@ -66,10 +71,5 @@ def coletar_emendas_individuais(ano: int) -> list[dict]:
             "exercicio":        ano,
             "fonte":            "siga_brasil",
         })
-    if len(rows) >= 10000:
-        log.warning(
-            "SIGA Brasil | %d | LIMIT 10000 atingido — resultados podem estar incompletos",
-            ano,
-        )
-    log.info("SIGA Brasil | %d | %d emendas individuais", ano, len(rows))
+    log.info("SIGA Brasil | %d | %d emendas individuais (%d bindings brutos)", ano, len(rows), len(bindings))
     return rows
