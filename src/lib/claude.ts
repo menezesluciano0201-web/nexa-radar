@@ -1,5 +1,5 @@
 // src/lib/claude.ts
-// Claude API wrapper — server-side only, never import in client components.
+import 'server-only'
 import Anthropic from '@anthropic-ai/sdk'
 
 const anthropic = new Anthropic({

@@ -103,13 +103,14 @@ export async function generateDiagnostico(
 
     if (updateError) throw updateError
   } catch (err) {
-    console.error(`[generateDiagnostico] id=${id}:`, err)
+    const msg = err instanceof Error ? err.message : JSON.stringify(err)
+    console.error(`[generateDiagnostico] id=${id}: ${msg}`)
     // Só marca erro se ainda estiver 'gerando' — evita sobrescrever uma conclusão bem-sucedida
     await admin
       .from('diagnosticos')
       .update({ status: 'erro' })
       .eq('id', id)
       .eq('status', 'gerando')
-      .then(() => {}, (e) => console.error(`[generateDiagnostico] falha ao marcar erro id=${id}:`, e))
+      .then(() => {}, (e) => console.error('[generateDiagnostico] falha ao marcar erro id=%s: %s', id, e instanceof Error ? e.message : JSON.stringify(e)))
   }
 }

@@ -5,7 +5,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { SupabaseClient } from '@supabase/supabase-js'
 
 export async function requireAdminClient(): Promise<ReturnType<typeof createAdminClient>> {
   const supabase = await createClient()

@@ -27,10 +27,11 @@ export default async function PortalBriefingPage() {
     )
   }
 
-  // RLS (migration 002) garante que só vê os próprios briefings; filtro explícito por status
+  // RLS (migration 002) scopes by parlamentar_id; explicit filter is belt-and-suspenders
   const { data: briefings } = await supabase
     .from('briefings')
     .select('id, status, valor_total_emendas, valor_em_risco, criado_em')
+    .eq('parlamentar_id', profile.parlamentar_id)
     .eq('status', 'entregue')
     .order('criado_em', { ascending: false })
 

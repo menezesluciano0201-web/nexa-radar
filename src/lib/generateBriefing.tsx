@@ -37,6 +37,7 @@ export async function generateBriefing(
     const municipiosList = (municipios ?? []) as MunicipioHabilitacao[]
 
     if (!emendasList.length) throw new Error(`Nenhuma emenda para parlamentar_id=${parlamentarId}`)
+    if (!municipiosList.length) console.warn(`[generateBriefing] id=${id}: municipios_habilitacao vazio — top5 será []`)
 
     const parlamentarNome = emendasList[0].parlamentar_nome ?? parlamentarId
 
@@ -107,12 +108,13 @@ export async function generateBriefing(
 
     if (updateError) throw updateError
   } catch (err) {
-    console.error(`[generateBriefing] id=${id}:`, err)
+    const msg = err instanceof Error ? err.message : JSON.stringify(err)
+    console.error(`[generateBriefing] id=${id}: ${msg}`)
     await admin
       .from('briefings')
       .update({ status: 'erro' })
       .eq('id', id)
       .eq('status', 'gerando')
-      .then(() => {}, (e) => console.error(`[generateBriefing] falha ao marcar erro id=${id}:`, e))
+      .then(() => {}, (e) => console.error('[generateBriefing] falha ao marcar erro id=%s: %s', id, e instanceof Error ? e.message : JSON.stringify(e)))
   }
 }
