@@ -38,6 +38,6 @@ export function calcularRisco(criticos: ProgramaCritico[]): {
 } {
   return {
     valorTotalIdentificado: criticos.reduce((s, p) => s + p.valor_empenhado, 0),
-    valorEmRisco: criticos.reduce((s, p) => s + (p.valor_empenhado - p.valor_pago), 0),
+    valorEmRisco: criticos.reduce((s, p) => s + Math.max(0, p.valor_empenhado - p.valor_pago), 0),
   }
 }

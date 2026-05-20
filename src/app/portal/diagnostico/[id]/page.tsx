@@ -22,7 +22,11 @@ export default async function PortalDiagnosticoDetailPage({
   if (!diagnostico) notFound()
 
   const programasCriticos: ProgramaCritico[] = Array.isArray(diagnostico.programas_criticos)
-    ? (diagnostico.programas_criticos as ProgramaCritico[])
+    ? (diagnostico.programas_criticos as unknown[]).filter(
+        (p): p is ProgramaCritico =>
+          p !== null && typeof p === 'object' &&
+          typeof (p as { percentual_execucao?: unknown }).percentual_execucao === 'number'
+      )
     : []
 
   // Signed URL via user client — storage RLS (migration 011) validates municipio access

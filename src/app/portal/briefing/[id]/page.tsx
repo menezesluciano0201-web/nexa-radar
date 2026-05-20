@@ -25,8 +25,12 @@ export default async function PortalBriefingDetailPage({
 
   if (!briefing) notFound()
 
-  const municipios = Array.isArray(briefing.municipios_recomendados)
-    ? (briefing.municipios_recomendados as MunicipioRecomendado[])
+  const municipios: MunicipioRecomendado[] = Array.isArray(briefing.municipios_recomendados)
+    ? (briefing.municipios_recomendados as unknown[]).filter(
+        (m): m is MunicipioRecomendado =>
+          m !== null && typeof m === 'object' &&
+          typeof (m as { score_total?: unknown }).score_total === 'number'
+      )
     : []
 
   // Signed URL via user client — storage RLS (migration 008) valida o acesso por parlamentar_id

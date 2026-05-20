@@ -16,33 +16,36 @@ export async function generateBriefing(
   const admin = createAdminClient()
 
   try {
-    // 1. Buscar emendas e municípios em paralelo
-    const [{ data: emendas, error: ee }, { data: municipios, error: me }] =
-      await Promise.all([
-        admin
-          .from('emendas_parlamentares')
-          .select(
-            'id,parlamentar_id,parlamentar_nome,tipo,parlamentar_tipo,municipio_ibge,area_tematica,valor_autorizado,valor_empenhado,valor_executado,percentual_execucao,prazo_limite,status_cauc,exercicio,fonte,coletado_em'
-          )
-          .eq('parlamentar_id', parlamentarId)
-          .limit(5000),
-        admin
-          .from('municipios_habilitacao')
-          .select('ibge,nome,uf,populacao,idh,cauc_regular,ultima_verificacao,programas_habilitados,programas_bloqueados')
-          .limit(6000),
-      ])
+    // 1. Buscar emendas (fetch first to derive the relevant IBGE codes)
+    const { data: emendas, error: ee } = await admin
+      .from('emendas_parlamentares')
+      .select(
+        'id,parlamentar_id,parlamentar_nome,tipo,parlamentar_tipo,municipio_ibge,area_tematica,valor_autorizado,valor_empenhado,valor_executado,percentual_execucao,prazo_limite,status_cauc,exercicio,fonte,coletado_em'
+      )
+      .eq('parlamentar_id', parlamentarId)
+      .limit(5000)
 
     if (ee) throw ee
-    if (me) throw me
 
     const emendasList = (emendas ?? []) as EmendaParlamentar[]
-    const municipiosList = (municipios ?? []) as MunicipioHabilitacao[]
-
     if (!emendasList.length) throw new Error(`Nenhuma emenda para parlamentar_id=${parlamentarId}`)
     if (emendasList.length >= 5000)
       console.warn('[generateBriefing] id=%s: emendas hit limit 5000 — data may be incomplete', id)
-    if (!municipiosList.length) console.warn('[generateBriefing] id=%s: municipios_habilitacao vazio — top5 será []', id)
-    if (municipiosList.length >= 6000) console.warn('[generateBriefing] id=%s: municipios hit limit 6000 — data may be incomplete', id)
+
+    // 2. Buscar apenas os municípios relevantes (unique IBGE codes in the parlamentar's emendas)
+    const ibgeCodes = [...new Set(emendasList.filter(e => e.municipio_ibge).map(e => e.municipio_ibge!))]
+    const { data: municipios, error: me } = ibgeCodes.length > 0
+      ? await admin
+          .from('municipios_habilitacao')
+          .select('ibge,nome,uf,populacao,idh,cauc_regular,ultima_verificacao,programas_habilitados,programas_bloqueados')
+          .in('ibge', ibgeCodes)
+          .limit(500)
+      : { data: [], error: null }
+
+    if (me) throw me
+
+    const municipiosList = (municipios ?? []) as MunicipioHabilitacao[]
+    if (!municipiosList.length) console.warn('[generateBriefing] id=%s: nenhum município encontrado em municipios_habilitacao — top5 será []', id)
 
     const parlamentarNome = emendasList[0].parlamentar_nome ?? parlamentarId
 

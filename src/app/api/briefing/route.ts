@@ -60,6 +60,10 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (error || !briefing) {
+    // 23505 = unique_violation: dedup index (migration 014) caught a concurrent request
+    if (error?.code === '23505') {
+      return NextResponse.json({ error: 'Já existe um briefing em geração para este parlamentar' }, { status: 409 })
+    }
     console.error('[POST /api/briefing] insert error:', error)
     return NextResponse.json({ error: 'Failed to create' }, { status: 500 })
   }

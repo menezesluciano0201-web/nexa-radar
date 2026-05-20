@@ -20,10 +20,13 @@ function brl(v: number) {
 
 export default async function AdminBriefingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ error?: string }>
 }) {
   const { id } = await params
+  const { error: actionError } = await searchParams
   const admin = await requireAdminClient()
 
   const { data: briefing } = await admin
@@ -44,10 +47,21 @@ export default async function AdminBriefingPage({
     pdfSignedUrl = data?.signedUrl ?? null
   }
 
-  const municipios = (briefing.municipios_recomendados ?? []) as MunicipioRecomendado[]
+  const municipios: MunicipioRecomendado[] = Array.isArray(briefing.municipios_recomendados)
+    ? (briefing.municipios_recomendados as unknown[]).filter(
+        (m): m is MunicipioRecomendado =>
+          m !== null && typeof m === 'object' &&
+          typeof (m as { score_total?: unknown }).score_total === 'number'
+      )
+    : []
 
   return (
     <div className="max-w-3xl space-y-6">
+      {actionError && (
+        <div className="rounded-md bg-red-900/30 border border-red-700 px-4 py-3 text-sm text-red-300">
+          {decodeURIComponent(actionError)}
+        </div>
+      )}
       {/* Cabeçalho */}
       <div className="flex items-start justify-between gap-4">
         <div>

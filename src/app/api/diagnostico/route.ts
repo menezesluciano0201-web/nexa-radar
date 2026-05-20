@@ -79,6 +79,10 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (error || !diagnostico) {
+    // 23505 = unique_violation: dedup index (migration 016) caught a concurrent request
+    if (error?.code === '23505') {
+      return NextResponse.json({ error: 'Já existe um diagnóstico em geração para este município' }, { status: 409 })
+    }
     console.error('[POST /api/diagnostico] insert error:', error)
     return NextResponse.json({ error: 'Failed to create' }, { status: 500 })
   }

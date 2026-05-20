@@ -22,10 +22,13 @@ function statusColor(status: string) {
 
 export default async function AdminDiagnosticoPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ error?: string }>
 }) {
   const { id } = await params
+  const { error: actionError } = await searchParams
   const admin = await requireAdminClient()
 
   const { data: diagnostico } = await admin
@@ -44,7 +47,11 @@ export default async function AdminDiagnosticoPage({
   if (munErr) console.error('[admin/diagnostico/%s] municipio lookup failed: %s', id, munErr.message)
 
   const programasCriticos: ProgramaCritico[] = Array.isArray(diagnostico.programas_criticos)
-    ? (diagnostico.programas_criticos as ProgramaCritico[])
+    ? (diagnostico.programas_criticos as unknown[]).filter(
+        (p): p is ProgramaCritico =>
+          p !== null && typeof p === 'object' &&
+          typeof (p as { percentual_execucao?: unknown }).percentual_execucao === 'number'
+      )
     : []
 
   // Gerar signed URL (bucket privado, válida por 1h)
@@ -59,6 +66,11 @@ export default async function AdminDiagnosticoPage({
 
   return (
     <div className="max-w-3xl space-y-6">
+      {actionError && (
+        <div className="rounded-md bg-red-900/30 border border-red-700 px-4 py-3 text-sm text-red-300">
+          {decodeURIComponent(actionError)}
+        </div>
+      )}
       {/* Cabeçalho */}
       <div className="flex items-start justify-between gap-4">
         <div>
