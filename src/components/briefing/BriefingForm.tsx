@@ -25,13 +25,16 @@ export default function BriefingForm({ parlamentarId }: Props) {
 
     const supabase = createClient()
 
+    // Declare channel binding before cleanup so the closure captures the variable safely
+    let channel: ReturnType<typeof supabase.channel>
+
     function cleanup() {
       channel.unsubscribe()
       if (pollRef.current) clearInterval(pollRef.current)
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
 
-    const channel = supabase
+    channel = supabase
       .channel(`briefing-${briefingId}`)
       .on(
         'postgres_changes',
