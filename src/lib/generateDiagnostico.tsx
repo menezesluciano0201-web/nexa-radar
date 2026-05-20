@@ -53,13 +53,10 @@ export async function generateDiagnostico(
     })
 
     // 4. Gerar PDF buffer
-    const geradoEm = new Date().toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+    // Manual format avoids ICU dependency (minimal Node.js builds may lack full pt-BR locale)
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const geradoEm = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`
 
     const pdfBuffer = await renderToBuffer(
       React.createElement(DiagnosticoPDF, {

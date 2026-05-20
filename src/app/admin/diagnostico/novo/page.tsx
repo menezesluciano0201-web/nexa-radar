@@ -5,11 +5,12 @@ import DiagnosticoForm from '@/components/diagnostico/DiagnosticoForm'
 export default async function NovoDiagnosticoPage() {
   const supabase = await createClient()
 
+  // Limit covers full IBGE seed (5571 municipalities) with growth room
   const { data: municipios } = await supabase
     .from('municipios_habilitacao')
     .select('ibge, nome, uf')
     .order('nome')
-    .limit(300)
+    .limit(6000)
 
   return (
     <div className="max-w-xl">

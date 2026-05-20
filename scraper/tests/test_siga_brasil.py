@@ -17,6 +17,21 @@ MOCK_SPARQL_RESULT = {
     }
 }
 
+MOCK_SPARQL_IBGE_FORA_ESCOPO = {
+    "results": {
+        "bindings": [
+            {
+                "autoria":         {"value": "DEP77777"},
+                "nomeAutor":       {"value": "Carlos Lima"},
+                "codigoIbge":      {"value": "3550308"},  # São Paulo-SP — fora de IBGE_ATIVOS
+                "area":            {"value": "Saúde"},
+                "valorAutorizado": {"value": "2000000.00"},
+                "valorEmpenhado":  {"value": "1500000.00"},
+            }
+        ]
+    }
+}
+
 MOCK_SPARQL_MISSING_IBGE = {
     "results": {
         "bindings": [
@@ -55,6 +70,18 @@ def test_coletar_emendas_sparql_erro_retorna_lista_vazia():
     with patch("scraper.sources.siga_brasil.SPARQLWrapper") as mock_sparql:
         instance = MagicMock()
         instance.query.side_effect = Exception("connection refused")
+        mock_sparql.return_value = instance
+
+        rows = coletar_emendas_individuais(2024)
+
+    assert rows == []
+
+
+def test_coletar_emendas_ibge_fora_do_escopo_e_ignorada():
+    """Binding com IBGE fora de IBGE_ATIVOS deve ser ignorada — evita inserir dados de outros municípios."""
+    with patch("scraper.sources.siga_brasil.SPARQLWrapper") as mock_sparql:
+        instance = MagicMock()
+        instance.query.return_value.convert.return_value = MOCK_SPARQL_IBGE_FORA_ESCOPO
         mock_sparql.return_value = instance
 
         rows = coletar_emendas_individuais(2024)
