@@ -59,8 +59,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Admin routes — only 'admin' tipo allowed
-  if (pathname.startsWith('/admin')) {
+  // Admin routes — only 'admin' tipo allowed (use '/admin/' prefix to avoid matching '/administrator' etc.)
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('tipo')

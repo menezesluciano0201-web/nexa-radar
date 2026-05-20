@@ -1,4 +1,5 @@
 // src/lib/generateDiagnostico.tsx
+import 'server-only'
 // Node.js only — never import in browser or Edge runtime.
 // Used by /api/diagnostico route.ts via fire-and-forget.
 import { renderToBuffer } from '@react-pdf/renderer'

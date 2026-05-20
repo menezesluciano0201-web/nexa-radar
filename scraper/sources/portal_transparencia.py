@@ -13,6 +13,13 @@ log = logging.getLogger(__name__)
 BASE_URL = "https://api.portaldatransparencia.gov.br/api-de-dados"
 
 
+def _truncate(value: str, max_len: int) -> str:
+    if len(value) > max_len:
+        log.warning("portal_transparencia | programa truncated from %d to %d chars: %s...", len(value), max_len, value[:40])
+        return value[:max_len]
+    return value
+
+
 class PortalTransparenciaClient:
     def __init__(self) -> None:
         self.headers = {
@@ -69,7 +76,7 @@ def coletar_transferencias(ibge: str, anos: list[int]) -> list[dict]:
         for r in registros:
             rows.append({
                 "municipio_ibge":  ibge,
-                "programa":        (r.get("programa") or {}).get("nome", "DESCONHECIDO"),
+                "programa":        _truncate((r.get("programa") or {}).get("nome", "DESCONHECIDO"), 100),
                 "fundo":           (r.get("orgaoSuperior") or {}).get("nome", "FEDERAL"),
                 "valor_empenhado": float(r.get("valorEmpenhado") or 0),
                 "valor_liquidado": float(r.get("valorLiquidado") or 0),

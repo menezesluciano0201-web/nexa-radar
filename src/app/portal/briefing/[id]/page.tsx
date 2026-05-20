@@ -35,7 +35,7 @@ export default async function PortalBriefingDetailPage({
       )
     : []
 
-  // Signed URL via user client — storage RLS (migration 008) valida o acesso por parlamentar_id
+  // Signed URL via user client — storage RLS (migration 017) enforces status='entregue' + parlamentar_id
   let pdfSignedUrl: string | null = null
   if (briefing.pdf_url) {
     const { data, error: storageErr } = await supabase.storage
