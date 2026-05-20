@@ -13,6 +13,13 @@ from scraper.config import RATE_LIMIT_SECONDS, USER_AGENT
 log = logging.getLogger(__name__)
 
 BASE_URL = "https://api.transferegov.sistema.gov.br/api"
+
+
+def _truncate(value: str, max_len: int) -> str:
+    if len(value) > max_len:
+        log.warning("transferegov | programa truncated from %d to %d chars: %s...", len(value), max_len, value[:40])
+        return value[:max_len]
+    return value
 HEADERS = {"Accept": "application/json", "User-Agent": USER_AGENT}
 
 
@@ -84,7 +91,7 @@ def coletar_convenios(ibge: str) -> list[dict]:
     for r in registros:
         rows.append({
             "municipio_ibge":  ibge,
-            "programa":        (r.get("objeto") or "CONVENIO")[:100],
+            "programa":        _truncate(r.get("objeto") or "CONVENIO", 100),
             "fundo":           (r.get("orgaoSuperior") or {}).get("nome", "FEDERAL"),
             "valor_empenhado": float(r.get("valorGlobal") or 0),
             "valor_liquidado": float(r.get("valorDesembolsado") or 0),

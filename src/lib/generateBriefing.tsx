@@ -79,9 +79,10 @@ export async function generateBriefing(
     })
 
     // 5. Gerar PDF
-    const now = new Date()
+    // Shift to BRT (UTC-3, Brazil Standard Time — no DST since 2019) before formatting.
     const pad = (n: number) => String(n).padStart(2, '0')
-    const geradoEm = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`
+    const brt = new Date(Date.now() - 3 * 60 * 60 * 1000)
+    const geradoEm = `${pad(brt.getUTCDate())}/${pad(brt.getUTCMonth() + 1)}/${brt.getUTCFullYear()} ${pad(brt.getUTCHours())}:${pad(brt.getUTCMinutes())}`
 
     const pdfBuffer = await renderToBuffer(
       React.createElement(BriefingPDF, {

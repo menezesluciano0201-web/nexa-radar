@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     console.error('[POST /api/diagnostico] municipio lookup error:', countErr.message)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
-  if (count === 0) {
+  if ((count ?? 0) === 0) {
     return NextResponse.json({ error: 'Município não encontrado' }, { status: 404 })
   }
 
