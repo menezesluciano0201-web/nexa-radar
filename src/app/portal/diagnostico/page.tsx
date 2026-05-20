@@ -1,7 +1,7 @@
 // src/app/portal/diagnostico/page.tsx
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import type { Diagnostico } from '@/types'
 
 function statusBadge(status: string) {
   switch (status) {
@@ -18,19 +18,21 @@ function statusBadge(status: string) {
 
 export default async function PortalDiagnosticoPage() {
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('municipio_ibge')
+    .eq('id', user.id)
+    .single()
+
+  // Belt-and-suspenders: RLS já filtra, mas sendo explícito evita vazamento em misconfiguration
   const { data: diagnosticos } = await supabase
     .from('diagnosticos')
     .select('id, status, valor_total_identificado, valor_em_risco, criado_em')
+    .eq('municipio_ibge', profile?.municipio_ibge ?? '')
     .order('criado_em', { ascending: false })
-
-  type DiagnosticoSummary = {
-    id: string
-    status: string
-    valor_total_identificado: number
-    valor_em_risco: number
-    criado_em: string
-  }
 
   return (
     <div>
@@ -42,7 +44,7 @@ export default async function PortalDiagnosticoPage() {
         </p>
       ) : (
         <div className="space-y-3">
-          {(diagnosticos as DiagnosticoSummary[]).map((d) => (
+          {diagnosticos.map((d) => (
             <Link
               key={d.id}
               href={`/portal/diagnostico/${d.id}`}

@@ -1,14 +1,16 @@
 // src/app/portal/page.tsx
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function PortalHomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('nome, tipo, municipio_ibge, parlamentar_id')
-    .eq('id', user!.id)
+    .eq('id', user.id)
     .single()
 
   return (

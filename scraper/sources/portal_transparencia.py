@@ -25,7 +25,8 @@ class PortalTransparenciaClient:
         url = f"{BASE_URL}/{endpoint}"
         results: list[dict] = []
         pagina = 1
-        while True:
+        MAX_PAGES = 100
+        while pagina <= MAX_PAGES:
             params["pagina"] = pagina
             try:
                 r = requests.get(url, headers=self.headers, params=params, timeout=30)
@@ -39,6 +40,8 @@ class PortalTransparenciaClient:
             results.extend(data)
             pagina += 1
             time.sleep(RATE_LIMIT_SECONDS)
+        if pagina > MAX_PAGES:
+            log.warning("Portal Transparência | %s | MAX_PAGES=%d atingido", endpoint, MAX_PAGES)
         return results
 
     def transferencias_por_municipio(self, ibge: str, ano: int) -> list[dict]:

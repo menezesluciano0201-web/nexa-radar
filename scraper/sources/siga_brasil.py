@@ -48,7 +48,8 @@ def coletar_emendas_individuais(ano: int) -> list[dict]:
         time.sleep(RATE_LIMIT_SECONDS)
 
     rows: list[dict] = []
-    for b in results["results"]["bindings"]:
+    bindings = results.get("results", {}).get("bindings", [])
+    for b in bindings:
         ibge = b.get("codigoIbge", {}).get("value")
         if not ibge:
             continue  # skip emendas sem município vinculado

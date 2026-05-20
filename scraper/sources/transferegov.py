@@ -18,7 +18,8 @@ HEADERS = {"Accept": "application/json", "User-Agent": USER_AGENT}
 def _get(endpoint: str, params: dict) -> list[dict]:
     results: list[dict] = []
     pagina = 1
-    while True:
+    MAX_PAGES = 100
+    while pagina <= MAX_PAGES:
         params["pagina"] = pagina
         params["tamanhoPagina"] = 100
         try:
@@ -39,6 +40,8 @@ def _get(endpoint: str, params: dict) -> list[dict]:
         results.extend(items)
         pagina += 1
         time.sleep(RATE_LIMIT_SECONDS)
+    if pagina > MAX_PAGES:
+        log.warning("Transferegov | %s | MAX_PAGES=%d atingido", endpoint, MAX_PAGES)
     return results
 
 

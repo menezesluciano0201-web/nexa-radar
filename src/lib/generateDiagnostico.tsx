@@ -115,6 +115,6 @@ export async function generateDiagnostico(
       .from('diagnosticos')
       .update({ status: 'erro' })
       .eq('id', id)
-      .then(() => {}, () => {})
+      .then(() => {}, (e) => console.error(`[generateDiagnostico] falha ao marcar erro id=${id}:`, e))
   }
 }
