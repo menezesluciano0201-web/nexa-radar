@@ -104,7 +104,7 @@ export function BriefingPDF({
                 <Text style={{ fontSize: 7, color: '#94a3b8', marginTop: 1 }}>{m.justificativa}</Text>
               </View>
               <Text style={styles.col22}>{m.score_total}/100</Text>
-              <Text style={styles.col20}>✓</Text>
+              <Text style={styles.col20}>{m.justificativa.includes('CAUC regular') ? '✓' : '—'}</Text>
             </View>
           ))}
         </View>

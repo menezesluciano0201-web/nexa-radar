@@ -44,13 +44,22 @@ export async function generateBriefing(
     const risco = calcularRiscoBriefing(emendasList)
     const top5 = calcularScoresMunicipios(emendasList, municipiosList)
 
+    // Resolve IBGE code to name so Claude receives "Lagarto" not "2803500"
+    const munNomeMap = new Map(municipiosList.map((m) => [m.ibge, `${m.nome} - ${m.uf}`]))
+    const urgente = risco.emendaVencendoMaisUrgente
+      ? {
+          ...risco.emendaVencendoMaisUrgente,
+          municipio: munNomeMap.get(risco.emendaVencendoMaisUrgente.municipio) ?? risco.emendaVencendoMaisUrgente.municipio,
+        }
+      : null
+
     // 3. Gerar texto com Claude
     const textoIA = await gerarBriefingParlamentar({
       parlamentarNome,
       totalEmendas: risco.valorTotalEmendas,
       valorEmRisco: risco.valorEmRisco,
       percentualExecutado: risco.percentualExecutado,
-      emendaVencendoMaisUrgente: risco.emendaVencendoMaisUrgente,
+      emendaVencendoMaisUrgente: urgente,
       top5Municipios: top5.map((m) => ({
         nome: m.nome,
         score: m.score_total,

@@ -1,12 +1,12 @@
 // src/app/admin/diagnostico/novo/page.tsx
-import { createClient } from '@/lib/supabase/server'
+import { requireAdminClient } from '@/lib/require-admin'
 import DiagnosticoForm from '@/components/diagnostico/DiagnosticoForm'
 
 export default async function NovoDiagnosticoPage() {
-  const supabase = await createClient()
+  const admin = await requireAdminClient()
 
   // Limit covers full IBGE seed (5571 municipalities) with growth room
-  const { data: municipios } = await supabase
+  const { data: municipios } = await admin
     .from('municipios_habilitacao')
     .select('ibge, nome, uf')
     .order('nome')

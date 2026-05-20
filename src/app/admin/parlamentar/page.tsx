@@ -1,5 +1,5 @@
 // src/app/admin/parlamentar/page.tsx
-import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdminClient } from '@/lib/require-admin'
 import Link from 'next/link'
 
 function brl(v: number) {
@@ -7,7 +7,7 @@ function brl(v: number) {
 }
 
 export default async function AdminParlamentarPage() {
-  const admin = createAdminClient()
+  const admin = await requireAdminClient()
 
   // Agrupar emendas por parlamentar (todos os anos)
   const { data: emendas } = await admin

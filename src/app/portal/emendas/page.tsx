@@ -25,10 +25,11 @@ export default async function PortalEmendasPage() {
     )
   }
 
-  // RLS (migration 013) filtra pelo parlamentar_id do profile logado
+  // RLS (migration 013) scopes by parlamentar_id; explicit filter is belt-and-suspenders
   const { data: emendas } = await supabase
     .from('emendas_parlamentares')
     .select('id, area_tematica, municipio_ibge, valor_autorizado, valor_empenhado, valor_executado, percentual_execucao, exercicio, tipo')
+    .eq('parlamentar_id', profile.parlamentar_id)
     .order('exercicio', { ascending: false })
     .order('valor_autorizado', { ascending: false })
 

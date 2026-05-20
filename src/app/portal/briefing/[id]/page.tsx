@@ -15,15 +15,15 @@ export default async function PortalBriefingDetailPage({
   const { id } = await params
   const supabase = await createClient()
 
-  // RLS (migration 002) garante que só acessa o próprio briefing
+  // RLS (migration 002) scopes by parlamentar_id. Status filter prevents fetching draft data before notFound.
   const { data: briefing } = await supabase
     .from('briefings')
     .select('id,status,parlamentar_id,valor_total_emendas,valor_em_risco,municipios_recomendados,texto_ia,pdf_url,criado_em')
     .eq('id', id)
+    .eq('status', 'entregue')
     .single()
 
   if (!briefing) notFound()
-  if (briefing.status === 'rascunho' || briefing.status === 'gerando' || briefing.status === 'erro') notFound()
 
   const municipios = Array.isArray(briefing.municipios_recomendados)
     ? (briefing.municipios_recomendados as MunicipioRecomendado[])

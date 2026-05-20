@@ -1,6 +1,6 @@
 // src/app/admin/briefing/[id]/page.tsx
 import { notFound } from 'next/navigation'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdminClient } from '@/lib/require-admin'
 import { marcarBriefingEntregue } from './actions'
 import type { MunicipioRecomendado } from '@/types'
 
@@ -24,7 +24,7 @@ export default async function AdminBriefingPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const admin = createAdminClient()
+  const admin = await requireAdminClient()
 
   const { data: briefing } = await admin
     .from('briefings')

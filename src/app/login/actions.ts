@@ -26,9 +26,15 @@ export async function signIn(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
-  // Prevent open redirect — require relative path that cannot be protocol-relative (//evil.com)
-  const safeNext = next && next.startsWith('/') && !next.startsWith('//')
-  redirect(safeNext ? next : '/')
+  // Use URL parsing to safely extract pathname+search — blocks //evil.com, /\evil.com, %2F%2F, etc.
+  let safePath = '/'
+  if (next) {
+    try {
+      const parsed = new URL(next, 'http://localhost')
+      if (parsed.origin === 'http://localhost') safePath = parsed.pathname + parsed.search
+    } catch { /* malformed URL — default to / */ }
+  }
+  redirect(safePath)
 }
 
 export async function signOut() {

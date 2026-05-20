@@ -1,6 +1,6 @@
 // src/app/admin/parlamentar/[id]/page.tsx
 import { notFound } from 'next/navigation'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdminClient } from '@/lib/require-admin'
 import Link from 'next/link'
 import BriefingForm from '@/components/briefing/BriefingForm'
 import type { EmendaParlamentar } from '@/types'
@@ -26,7 +26,7 @@ export default async function AdminParlamentarDetailPage({
 }) {
   const { id } = await params
   const parlamentarId = decodeURIComponent(id)
-  const admin = createAdminClient()
+  const admin = await requireAdminClient()
 
   const [{ data: emendas }, { data: briefings }] = await Promise.all([
     admin

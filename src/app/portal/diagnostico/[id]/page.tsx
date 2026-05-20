@@ -11,17 +11,15 @@ export default async function PortalDiagnosticoDetailPage({
   const { id } = await params
   const supabase = await createClient()
 
-  // RLS scopes by municipio_ibge. Application-level checks below enforce delivery status.
+  // RLS scopes by municipio_ibge. Status filter here prevents fetching draft data before the notFound check.
   const { data: diagnostico } = await supabase
     .from('diagnosticos')
     .select('id,status,municipio_ibge,valor_total_identificado,valor_em_risco,programas_criticos,acoes_recomendadas,texto_ia,pdf_url,criado_em')
     .eq('id', id)
+    .in('status', ['entregue', 'convertido'])
     .single()
 
   if (!diagnostico) notFound()
-
-  // Block access to any non-delivered state — client should only see entregue/convertido
-  if (diagnostico.status !== 'entregue' && diagnostico.status !== 'convertido') notFound()
 
   const programasCriticos: ProgramaCritico[] = Array.isArray(diagnostico.programas_criticos)
     ? (diagnostico.programas_criticos as ProgramaCritico[])
