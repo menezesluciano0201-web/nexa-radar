@@ -11,14 +11,19 @@ export default async function PortalDiagnosticoDetailPage({
   const { id } = await params
   const supabase = await createClient()
 
-  // RLS garante que o cliente só vê o próprio município
+  // RLS scopes by municipio_ibge; status filter ensures clients cannot access drafts or
+  // in-progress records via direct URL — only formally delivered diagnostics are visible.
   const { data: diagnostico } = await supabase
     .from('diagnosticos')
     .select('id,status,municipio_ibge,valor_total_identificado,valor_em_risco,programas_criticos,acoes_recomendadas,texto_ia,pdf_url,criado_em')
     .eq('id', id)
+    .in('status', ['entregue', 'convertido', 'rascunho', 'gerando', 'erro'])
     .single()
 
   if (!diagnostico) notFound()
+
+  // Block access to unreleased drafts — client should only see entregue/convertido
+  if (diagnostico.status === 'rascunho') notFound()
 
   if (diagnostico.status === 'gerando') {
     return (

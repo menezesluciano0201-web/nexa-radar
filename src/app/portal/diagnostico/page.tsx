@@ -39,11 +39,13 @@ export default async function PortalDiagnosticoPage() {
     )
   }
 
-  // Belt-and-suspenders: RLS já filtra, mas sendo explícito evita vazamento em misconfiguration
+  // Only show formally delivered diagnostics — hide drafts (rascunho), in-progress, and errors.
+  // RLS already scopes by municipio_ibge; explicit filter is belt-and-suspenders.
   const { data: diagnosticos } = await supabase
     .from('diagnosticos')
     .select('id, status, valor_total_identificado, valor_em_risco, criado_em')
     .eq('municipio_ibge', profile.municipio_ibge)
+    .in('status', ['entregue', 'convertido'])
     .order('criado_em', { ascending: false })
 
   return (

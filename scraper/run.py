@@ -24,14 +24,11 @@ logging.basicConfig(
 )
 log = logging.getLogger("nexaradar.run")
 
-ANOS = [datetime.now().year, datetime.now().year - 1]
-
-
-def coletar_municipio(ibge: str, nome: str) -> None:
+def coletar_municipio(ibge: str, nome: str, anos: list[int]) -> None:
     log.info("=== Iniciando coleta | %s (%s) ===", nome, ibge)
 
     # Transferências Portal Transparência
-    rows_portal = coletar_transferencias(ibge, ANOS)
+    rows_portal = coletar_transferencias(ibge, anos)
     if rows_portal:
         upsert("transferencias_federais", rows_portal,
                on_conflict="municipio_ibge,programa,fonte,competencia")
@@ -43,7 +40,7 @@ def coletar_municipio(ibge: str, nome: str) -> None:
                on_conflict="municipio_ibge,programa,fonte,competencia")
 
     # FNDE
-    rows_fnde = coletar_fnde(ibge, ANOS)
+    rows_fnde = coletar_fnde(ibge, anos)
     if rows_fnde:
         upsert("transferencias_federais", rows_fnde,
                on_conflict="municipio_ibge,programa,fonte,competencia")
@@ -75,13 +72,17 @@ def coletar_emendas(ano: int) -> None:
 def main() -> None:
     log.info("Nexa Radar — Início da coleta %s", datetime.now().isoformat())
 
+    # Compute anos inside main() — avoids stale year if process lives across midnight
+    hoje = datetime.now()
+    anos = [hoje.year, hoje.year - 1]
+
     for nome, ibge in MUNICIPIOS_ATIVOS.items():
         try:
-            coletar_municipio(ibge, nome)
+            coletar_municipio(ibge, nome, anos)
         except Exception as e:
             log.error("Falha em %s (%s): %s", nome, ibge, e, exc_info=True)
 
-    for ano in ANOS:
+    for ano in anos:
         try:
             coletar_emendas(ano)
         except Exception as e:
