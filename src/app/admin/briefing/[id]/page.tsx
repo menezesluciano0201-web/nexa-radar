@@ -28,7 +28,7 @@ export default async function AdminBriefingPage({
 
   const { data: briefing } = await admin
     .from('briefings')
-    .select('*')
+    .select('id,status,parlamentar_id,valor_total_emendas,valor_em_risco,municipios_recomendados,texto_ia,pdf_url,criado_em')
     .eq('id', id)
     .single()
 

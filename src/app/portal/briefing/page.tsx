@@ -4,11 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 
 function statusBadge(status: string) {
-  switch (status) {
-    case 'entregue':   return 'bg-green-900/50 text-green-300 border-green-800'
-    case 'convertido': return 'bg-sky-900/50 text-sky-300 border-sky-800'
-    default:           return 'bg-slate-700/50 text-slate-300 border-slate-600'
-  }
+  if (status === 'entregue') return 'bg-green-900/50 text-green-300 border-green-800'
+  return 'bg-slate-700/50 text-slate-300 border-slate-600'
 }
 
 export default async function PortalBriefingPage() {
@@ -34,7 +31,7 @@ export default async function PortalBriefingPage() {
   const { data: briefings } = await supabase
     .from('briefings')
     .select('id, status, valor_total_emendas, valor_em_risco, criado_em')
-    .in('status', ['entregue', 'convertido'])
+    .eq('status', 'entregue')
     .order('criado_em', { ascending: false })
 
   return (
