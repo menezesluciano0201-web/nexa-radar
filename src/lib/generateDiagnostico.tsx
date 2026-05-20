@@ -26,7 +26,7 @@ export async function generateDiagnostico(
       await Promise.all([
         admin
           .from('transferencias_federais')
-          .select('*')
+          .select('id,municipio_ibge,programa,fundo,valor_empenhado,valor_liquidado,valor_pago,percentual_execucao,competencia,prazo_limite,fonte,coletado_em')
           .eq('municipio_ibge', municipioIbge),
         admin
           .from('municipios_habilitacao')

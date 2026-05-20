@@ -74,7 +74,7 @@ def coletar_emendas_individuais(ano: int) -> list[dict]:
             "area_tematica":    (b.get("area", {}).get("value") or "").lower(),
             "valor_autorizado": float((b.get("valorAutorizado") or {}).get("value") or 0),
             "valor_empenhado":  float((b.get("valorEmpenhado") or {}).get("value") or 0),
-            "valor_executado":  0.0,
+            "valor_executado":  0.0,  # SIGA SPARQL não expõe valor executado — percentual_execucao será 0%
             "exercicio":        ano,
             "fonte":            "siga_brasil",
         })

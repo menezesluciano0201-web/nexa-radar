@@ -57,6 +57,7 @@ export interface TransferenciaFederal {
   prazo_limite: string | null
   fonte: string
   coletado_em: string
+  raw_json?: unknown
 }
 
 export interface EmendaParlamentar {

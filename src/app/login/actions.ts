@@ -8,9 +8,13 @@ import { createClient } from '@/lib/supabase/server'
 export async function signIn(formData: FormData) {
   const supabase = await createClient()
 
-  const email = formData.get('email') as string
-  const password = formData.get('password') as string
-  const next = formData.get('next') as string
+  const email = (formData.get('email') as string | null) ?? ''
+  const password = (formData.get('password') as string | null) ?? ''
+  const next = (formData.get('next') as string | null) ?? ''
+
+  if (!email || !password) {
+    redirect('/login?error=E-mail%20e%20senha%20s%C3%A3o%20obrigat%C3%B3rios')
+  }
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 

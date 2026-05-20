@@ -6,6 +6,7 @@ Sem autenticação para leitura pública.
 import time
 import logging
 from datetime import date
+from typing import Optional
 import requests
 from scraper.config import RATE_LIMIT_SECONDS, USER_AGENT
 
@@ -65,6 +66,17 @@ def _extrair_competencia(r: dict) -> str:
     return f"{date.today().year}-01-01"
 
 
+def _extrair_prazo_limite(r: dict) -> Optional[str]:
+    """Extract prazo_limite from dataFimVigencia (end-of-vigência date)."""
+    val = r.get("dataFimVigencia")
+    if val and isinstance(val, str) and len(val) >= 10:
+        try:
+            return str(date.fromisoformat(val[:10]))
+        except (ValueError, TypeError):
+            pass
+    return None
+
+
 def coletar_convenios(ibge: str) -> list[dict]:
     """Retorna rows prontas para inserção em transferencias_federais."""
     registros = _get("convenios", {"codigoMunicipioIbge": ibge})
@@ -79,6 +91,7 @@ def coletar_convenios(ibge: str) -> list[dict]:
             "valor_pago":      float(r.get("valorDesembolsado") or 0),
             "fonte":           "transferegov",
             "competencia":     _extrair_competencia(r),
+            "prazo_limite":    _extrair_prazo_limite(r),
             "raw_json":        r,
         })
     log.info("Transferegov | %s | %d convênios", ibge, len(rows))

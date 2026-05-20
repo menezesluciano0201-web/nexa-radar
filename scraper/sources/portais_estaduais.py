@@ -6,6 +6,7 @@ Erros de scraping são esperados — portais mudam de layout sem aviso.
 """
 import logging
 import time
+from typing import Optional
 import requests
 from scraper.config import USER_AGENT, RATE_LIMIT_SECONDS
 
@@ -18,7 +19,7 @@ PORTAIS = {
 }
 
 
-def tentar_coletar_estadual(uf: str, ibge: str) -> list[dict] | None:
+def tentar_coletar_estadual(uf: str, ibge: str) -> Optional[list[dict]]:
     """
     Tenta scraping do portal estadual.
     Retorna None quando parsing ainda não está implementado (pendência manual).
