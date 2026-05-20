@@ -32,7 +32,9 @@ export default function DiagnosticoForm({ municipios }: Props) {
 
     const supabase = createClient()
 
-    // cleanup declarado primeiro para evitar uso antes da declaração
+    // Declare channel binding before cleanup so the closure captures the variable safely
+    let channel: ReturnType<typeof supabase.channel>
+
     function cleanup() {
       channel.unsubscribe()
       if (pollRef.current) clearInterval(pollRef.current)
@@ -40,7 +42,7 @@ export default function DiagnosticoForm({ municipios }: Props) {
     }
 
     // Realtime subscription
-    const channel = supabase
+    channel = supabase
       .channel(`diagnostico-${diagnosticoId}`)
       .on(
         'postgres_changes',

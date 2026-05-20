@@ -30,7 +30,7 @@ export default async function AdminDiagnosticoPage({
 
   const { data: diagnostico } = await admin
     .from('diagnosticos')
-    .select('*')
+    .select('id,status,municipio_ibge,valor_total_identificado,valor_em_risco,programas_criticos,acoes_recomendadas,texto_ia,pdf_url,criado_em')
     .eq('id', id)
     .single()
 

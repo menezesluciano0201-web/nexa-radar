@@ -20,30 +20,8 @@ export default async function PortalDiagnosticoDetailPage({
 
   if (!diagnostico) notFound()
 
-  // Block access to unreleased drafts — client should only see entregue/convertido
-  if (diagnostico.status === 'rascunho') notFound()
-
-  if (diagnostico.status === 'gerando') {
-    return (
-      <div className="max-w-3xl">
-        <h1 className="text-2xl font-bold text-slate-100 mb-4">Diagnóstico Municipal</h1>
-        <div className="rounded-md bg-yellow-900/30 border border-yellow-700 px-5 py-4 text-sm text-yellow-300">
-          Este diagnóstico está sendo gerado. Volte em alguns instantes.
-        </div>
-      </div>
-    )
-  }
-
-  if (diagnostico.status === 'erro') {
-    return (
-      <div className="max-w-3xl">
-        <h1 className="text-2xl font-bold text-slate-100 mb-4">Diagnóstico Municipal</h1>
-        <div className="rounded-md bg-red-900/30 border border-red-700 px-5 py-4 text-sm text-red-300">
-          Houve um problema ao gerar este diagnóstico. Entre em contato com a equipe Nexa Radar.
-        </div>
-      </div>
-    )
-  }
+  // Block access to any non-delivered state — client should only see entregue/convertido
+  if (diagnostico.status !== 'entregue' && diagnostico.status !== 'convertido') notFound()
 
   const programasCriticos: ProgramaCritico[] = Array.isArray(diagnostico.programas_criticos)
     ? (diagnostico.programas_criticos as ProgramaCritico[])

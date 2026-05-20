@@ -25,6 +25,7 @@ export async function marcarBriefingEntregue(formData: FormData) {
     .from('briefings')
     .update({ status: 'entregue' })
     .eq('id', id)
+    .eq('status', 'rascunho')
 
   if (error) {
     console.error('[marcarBriefingEntregue] update failed:', error.message)

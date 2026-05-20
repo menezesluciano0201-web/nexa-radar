@@ -28,6 +28,7 @@ export async function marcarDiagnosticoEntregue(formData: FormData) {
     .from('diagnosticos')
     .update({ status: 'entregue' })
     .eq('id', id)
+    .eq('status', 'rascunho')
 
   if (error) {
     console.error('[marcarDiagnosticoEntregue] update failed:', error.message)
@@ -36,4 +37,5 @@ export async function marcarDiagnosticoEntregue(formData: FormData) {
 
   revalidatePath(`/admin/diagnostico/${id}`)
   revalidatePath('/portal/diagnostico', 'page')
+  redirect(`/admin/diagnostico/${id}`)
 }
