@@ -29,6 +29,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
         {/* Login form */}
         <form action={signIn} className="space-y-4">
+          <input type="hidden" name="next" value={params.next ?? ''} />
           <div>
             <label
               htmlFor="email"

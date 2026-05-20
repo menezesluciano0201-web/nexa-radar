@@ -17,6 +17,9 @@ export async function gerarTexto(prompt: string): Promise<string> {
     messages: [{ role: 'user', content: prompt }],
   })
 
+  if (!message.content.length) {
+    throw new Error('Claude returned empty content')
+  }
   const block = message.content[0]
   if (block.type !== 'text') {
     throw new Error(`Unexpected Claude response type: ${block.type}`)

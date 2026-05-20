@@ -44,6 +44,15 @@ export default async function AdminDiagnosticoPage({
 
   const programasCriticos = (diagnostico.programas_criticos ?? []) as ProgramaCritico[]
 
+  // Gerar signed URL (bucket privado, válida por 1h)
+  let pdfSignedUrl: string | null = null
+  if (diagnostico.pdf_url) {
+    const { data } = await admin.storage
+      .from('relatorios')
+      .createSignedUrl(diagnostico.pdf_url, 3600)
+    pdfSignedUrl = data?.signedUrl ?? null
+  }
+
   return (
     <div className="max-w-3xl space-y-6">
       {/* Cabeçalho */}
@@ -95,9 +104,9 @@ export default async function AdminDiagnosticoPage({
       )}
 
       {/* PDF */}
-      {diagnostico.pdf_url && (
+      {pdfSignedUrl && (
         <a
-          href={diagnostico.pdf_url}
+          href={pdfSignedUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 rounded-md border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:border-slate-500 hover:text-slate-100 transition-colors"

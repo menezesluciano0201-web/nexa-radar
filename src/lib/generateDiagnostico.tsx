@@ -84,23 +84,19 @@ export async function generateDiagnostico(
 
     if (uploadError) throw uploadError
 
-    const {
-      data: { publicUrl },
-    } = admin.storage.from('relatorios').getPublicUrl(filename)
-
     // 6. Ações recomendadas (top 5 programas)
     const acoes = programasCriticos.slice(0, 5).map(
       (p) =>
         `Regularizar execução de ${p.programa}: ${brl(p.valor_empenhado - p.valor_pago)} parado`
     )
 
-    // 7. Atualizar registro diagnosticos
+    // 7. Atualizar registro diagnosticos — armazena path (não URL pública, bucket é privado)
     const { error: updateError } = await admin
       .from('diagnosticos')
       .update({
         status: 'rascunho',
         texto_ia: textoIA,
-        pdf_url: publicUrl,
+        pdf_url: filename,
         valor_total_identificado: valorTotalIdentificado,
         valor_em_risco: valorEmRisco,
         programas_criticos: programasCriticos,

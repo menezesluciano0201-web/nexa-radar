@@ -1,11 +1,11 @@
 // src/app/admin/diagnostico/novo/page.tsx
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import DiagnosticoForm from '@/components/diagnostico/DiagnosticoForm'
 
 export default async function NovoDiagnosticoPage() {
-  const admin = createAdminClient()
+  const supabase = await createClient()
 
-  const { data: municipios } = await admin
+  const { data: municipios } = await supabase
     .from('municipios_habilitacao')
     .select('ibge, nome, uf')
     .order('nome')

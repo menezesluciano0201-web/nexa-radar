@@ -38,7 +38,11 @@ export default async function PortalLayout({
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/login')
+  if (!profile) {
+    // Conta existe em auth mas sem profile — evitar redirect loop fazendo signOut
+    await supabase.auth.signOut()
+    redirect('/login?error=Conta%20n%C3%A3o%20configurada.%20Contate%20a%20equipe%20Nexa%20Radar.')
+  }
   if (profile.tipo === 'admin') redirect('/admin')
 
   const tipo = VALID_TIPOS.includes(profile.tipo as UserTipo)

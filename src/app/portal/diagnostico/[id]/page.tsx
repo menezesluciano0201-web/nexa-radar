@@ -1,6 +1,7 @@
 // src/app/portal/diagnostico/[id]/page.tsx
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { ProgramaCritico } from '@/types'
 
 export default async function PortalDiagnosticoDetailPage({
@@ -11,6 +12,7 @@ export default async function PortalDiagnosticoDetailPage({
   const { id } = await params
   const supabase = await createClient()
 
+  // RLS garante que o cliente só vê o próprio município
   const { data: diagnostico } = await supabase
     .from('diagnosticos')
     .select('*')
@@ -20,6 +22,16 @@ export default async function PortalDiagnosticoDetailPage({
   if (!diagnostico) notFound()
 
   const programasCriticos = (diagnostico.programas_criticos ?? []) as ProgramaCritico[]
+
+  // Gerar signed URL (bucket privado, válida por 1h); usa admin client pois RLS já validou acesso acima
+  let pdfSignedUrl: string | null = null
+  if (diagnostico.pdf_url) {
+    const admin = createAdminClient()
+    const { data } = await admin.storage
+      .from('relatorios')
+      .createSignedUrl(diagnostico.pdf_url, 3600)
+    pdfSignedUrl = data?.signedUrl ?? null
+  }
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -37,9 +49,9 @@ export default async function PortalDiagnosticoDetailPage({
           </p>
         </div>
 
-        {diagnostico.pdf_url && (
+        {pdfSignedUrl && (
           <a
-            href={diagnostico.pdf_url}
+            href={pdfSignedUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-shrink-0 rounded-md border border-nexa-700 px-4 py-2 text-sm text-nexa-400 hover:bg-nexa-900/20 transition-colors"
