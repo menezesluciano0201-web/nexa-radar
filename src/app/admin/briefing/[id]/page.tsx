@@ -37,9 +37,10 @@ export default async function AdminBriefingPage({
   // Signed URL para PDF
   let pdfSignedUrl: string | null = null
   if (briefing.pdf_url) {
-    const { data } = await admin.storage
+    const { data, error: storageErr } = await admin.storage
       .from('relatorios')
       .createSignedUrl(briefing.pdf_url, 3600)
+    if (storageErr) console.error('[admin/briefing/%s] signed URL failed: %s', id, storageErr.message)
     pdfSignedUrl = data?.signedUrl ?? null
   }
 

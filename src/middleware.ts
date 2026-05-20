@@ -45,6 +45,12 @@ export async function middleware(request: NextRequest) {
     return supabaseResponse
   }
 
+  // API routes handle their own auth (return JSON 401/403).
+  // Don't redirect to the HTML login page — that breaks non-browser clients.
+  if (pathname.startsWith('/api/')) {
+    return supabaseResponse
+  }
+
   // Protected routes — redirect to login if not authenticated
   if (!user) {
     const loginUrl = request.nextUrl.clone()

@@ -47,6 +47,7 @@ export default async function PortalDiagnosticoPage() {
     .eq('municipio_ibge', profile.municipio_ibge)
     .in('status', ['entregue', 'convertido'])
     .order('criado_em', { ascending: false })
+    .limit(50)
 
   return (
     <div>

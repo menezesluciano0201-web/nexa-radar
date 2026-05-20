@@ -28,7 +28,8 @@ export async function generateBriefing(
           .limit(5000),
         admin
           .from('municipios_habilitacao')
-          .select('ibge,nome,uf,populacao,idh,cauc_regular,ultima_verificacao,programas_habilitados,programas_bloqueados'),
+          .select('ibge,nome,uf,populacao,idh,cauc_regular,ultima_verificacao,programas_habilitados,programas_bloqueados')
+          .limit(6000),
       ])
 
     if (ee) throw ee
@@ -41,6 +42,7 @@ export async function generateBriefing(
     if (emendasList.length >= 5000)
       console.warn('[generateBriefing] id=%s: emendas hit limit 5000 — data may be incomplete', id)
     if (!municipiosList.length) console.warn('[generateBriefing] id=%s: municipios_habilitacao vazio — top5 será []', id)
+    if (municipiosList.length >= 6000) console.warn('[generateBriefing] id=%s: municipios hit limit 6000 — data may be incomplete', id)
 
     const parlamentarNome = emendasList[0].parlamentar_nome ?? parlamentarId
 

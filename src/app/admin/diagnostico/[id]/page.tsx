@@ -50,9 +50,10 @@ export default async function AdminDiagnosticoPage({
   // Gerar signed URL (bucket privado, válida por 1h)
   let pdfSignedUrl: string | null = null
   if (diagnostico.pdf_url) {
-    const { data } = await admin.storage
+    const { data, error: storageErr } = await admin.storage
       .from('relatorios')
       .createSignedUrl(diagnostico.pdf_url, 3600)
+    if (storageErr) console.error('[admin/diagnostico/%s] signed URL failed: %s', id, storageErr.message)
     pdfSignedUrl = data?.signedUrl ?? null
   }
 

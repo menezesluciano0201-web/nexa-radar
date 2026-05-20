@@ -33,12 +33,14 @@ export default async function AdminParlamentarDetailPage({
       .from('emendas_parlamentares')
       .select('parlamentar_nome, valor_autorizado, valor_empenhado, valor_executado, area_tematica, exercicio, municipio_ibge')
       .eq('parlamentar_id', parlamentarId)
-      .order('exercicio', { ascending: false }),
+      .order('exercicio', { ascending: false })
+      .limit(5000),
     admin
       .from('briefings')
       .select('id, status, valor_total_emendas, valor_em_risco, criado_em')
       .eq('parlamentar_id', parlamentarId)
-      .order('criado_em', { ascending: false }),
+      .order('criado_em', { ascending: false })
+      .limit(100),
   ])
 
   if (!emendas?.length) notFound()

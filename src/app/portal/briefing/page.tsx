@@ -34,6 +34,7 @@ export default async function PortalBriefingPage() {
     .eq('parlamentar_id', profile.parlamentar_id)
     .eq('status', 'entregue')
     .order('criado_em', { ascending: false })
+    .limit(50)
 
   return (
     <div>
