@@ -24,10 +24,15 @@ export async function marcarDiagnosticoEntregue(formData: FormData) {
   if (!profile || profile.tipo !== 'admin') redirect('/portal')
 
   const admin = createAdminClient()
-  await admin
+  const { error } = await admin
     .from('diagnosticos')
     .update({ status: 'entregue' })
     .eq('id', id)
+
+  if (error) {
+    console.error('[marcarDiagnosticoEntregue] update failed:', error.message)
+    redirect(`/admin/diagnostico/${id}?error=Falha+ao+atualizar+status`)
+  }
 
   revalidatePath(`/admin/diagnostico/${id}`)
   revalidatePath('/portal/diagnostico', 'page')

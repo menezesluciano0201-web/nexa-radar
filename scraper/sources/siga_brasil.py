@@ -12,7 +12,9 @@ log = logging.getLogger(__name__)
 
 SPARQL_ENDPOINT = "https://www12.senado.leg.br/orcamento/sparql"
 
-QUERY_EMENDAS = """
+def _build_query(ano: int, ibge_values: str) -> str:
+    """Build SPARQL query with server-side IBGE filter to reduce transferred data."""
+    return f"""
 PREFIX : <http://www.siga.senado.leg.br/vocab#>
 SELECT ?autoria ?nomeAutor ?codigoIbge ?area ?valorAutorizado ?valorEmpenhado
 WHERE {{
@@ -27,6 +29,7 @@ WHERE {{
   ?autorURI :id ?autoria .
   ?localidade :codigoIbge ?codigoIbge .
   ?funcao :descricao ?area .
+  VALUES ?codigoIbge {{ {ibge_values} }}
 }}
 LIMIT 10000
 """
@@ -34,9 +37,10 @@ LIMIT 10000
 
 def coletar_emendas_individuais(ano: int) -> list[dict]:
     """Retorna rows prontas para inserção em emendas_parlamentares."""
+    ibge_values = " ".join(f'"{ibge}"' for ibge in IBGE_ATIVOS)
     sparql = SPARQLWrapper(SPARQL_ENDPOINT)
     sparql.addCustomHttpHeader("User-Agent", USER_AGENT)
-    sparql.setQuery(QUERY_EMENDAS.format(ano=ano))
+    sparql.setQuery(_build_query(ano, ibge_values))
     sparql.setReturnFormat(JSON)
 
     try:

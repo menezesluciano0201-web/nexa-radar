@@ -11,13 +11,11 @@ export default async function PortalDiagnosticoDetailPage({
   const { id } = await params
   const supabase = await createClient()
 
-  // RLS scopes by municipio_ibge; status filter ensures clients cannot access drafts or
-  // in-progress records via direct URL — only formally delivered diagnostics are visible.
+  // RLS scopes by municipio_ibge. Application-level checks below enforce delivery status.
   const { data: diagnostico } = await supabase
     .from('diagnosticos')
     .select('id,status,municipio_ibge,valor_total_identificado,valor_em_risco,programas_criticos,acoes_recomendadas,texto_ia,pdf_url,criado_em')
     .eq('id', id)
-    .in('status', ['entregue', 'convertido', 'rascunho', 'gerando', 'erro'])
     .single()
 
   if (!diagnostico) notFound()
@@ -51,12 +49,15 @@ export default async function PortalDiagnosticoDetailPage({
     ? (diagnostico.programas_criticos as ProgramaCritico[])
     : []
 
-  // Signed URL via user client — storage RLS (migration 006) valida o acesso por município
+  // Signed URL via user client — storage RLS (migration 011) validates municipio access
   let pdfSignedUrl: string | null = null
   if (diagnostico.pdf_url) {
-    const { data } = await supabase.storage
+    const { data, error: storageErr } = await supabase.storage
       .from('relatorios')
       .createSignedUrl(diagnostico.pdf_url, 3600)
+    if (storageErr) {
+      console.error('[portal/diagnostico] signed URL failed:', storageErr.message)
+    }
     pdfSignedUrl = data?.signedUrl ?? null
   }
 
