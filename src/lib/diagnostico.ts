@@ -21,6 +21,8 @@ export function identificarProgramasCriticos(
       const diasRestantes = Math.floor(
         (prazo.getTime() - hoje.getTime()) / 86_400_000
       )
+      // Includes overdue items (diasRestantes < 0) — past deadlines still need remediation action.
+      // briefing.ts filters dias >= 0 for the "most urgent" display; this is intentionally different.
       return diasRestantes <= DIAS_PRAZO_CRITICO
     })
     .map((t) => ({

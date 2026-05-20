@@ -162,7 +162,7 @@ export default async function AdminDiagnosticoPage({
                 <div className="flex items-center gap-4">
                   <span className="text-slate-500 text-xs font-mono">
                     R${' '}
-                    {(p.valor_empenhado - p.valor_pago).toLocaleString('pt-BR')} parado
+                    {Math.max(0, p.valor_empenhado - p.valor_pago).toLocaleString('pt-BR')} parado
                   </span>
                   <span className="text-red-400 font-mono font-semibold">
                     {p.percentual_execucao.toFixed(1)}%

@@ -21,25 +21,31 @@ def _rest_url(table: str) -> str:
     return f"{SUPABASE_URL}/rest/v1/{table}"
 
 
+_UPSERT_BATCH_SIZE = 500  # keep payloads well under PostgREST 10 MB body limit
+
+
 def upsert(table: str, rows: list[dict], on_conflict: str) -> None:
-    """Insert or update rows. on_conflict: comma-separated column names."""
+    """Insert or update rows in batches. on_conflict: comma-separated column names."""
     if not rows:
         return
     headers = {
         **_HEADERS,
         "Prefer": "resolution=merge-duplicates,return=minimal",
     }
-    r = requests.post(
-        _rest_url(table),
-        headers=headers,
-        params={"on_conflict": on_conflict},
-        json=rows,
-        timeout=30,
-    )
-    if r.status_code not in (200, 201, 204):
-        log.error("Supabase upsert error table=%s status=%s body=%s",
-                  table, r.status_code, r.text[:200])
-        r.raise_for_status()
+    for i in range(0, len(rows), _UPSERT_BATCH_SIZE):
+        batch = rows[i:i + _UPSERT_BATCH_SIZE]
+        r = requests.post(
+            _rest_url(table),
+            headers=headers,
+            params={"on_conflict": on_conflict},
+            json=batch,
+            timeout=30,
+        )
+        if r.status_code not in (200, 201, 204):
+            log.error("Supabase upsert error table=%s batch=%d-%d status=%s body=%s",
+                      table, i, i + len(batch) - 1, r.status_code, r.text[:200])
+            r.raise_for_status()
+        log.debug("Supabase upsert table=%s batch=%d-%d ok", table, i, i + len(batch) - 1)
 
 
 def select(table: str, filters: Optional[dict] = None, columns: str = "*") -> list[dict]:

@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     console.error('[POST /api/briefing] emendas lookup error:', emendasErr.message)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
-  if (emendasCount === 0)
+  if ((emendasCount ?? 0) === 0)
     return NextResponse.json({ error: 'Parlamentar não encontrado ou sem emendas' }, { status: 404 })
 
   // Dedup: impedir geração simultânea para o mesmo parlamentar
