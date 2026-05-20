@@ -3,6 +3,7 @@ import type { TransferenciaFederal, ProgramaCritico } from '@/types'
 
 const PCT_EXECUCAO_CRITICO = 70
 const DIAS_PRAZO_CRITICO = 90
+const MAX_PROGRAMAS_CRITICOS = 20  // cap sent to Claude to avoid prompt overflow
 
 export function identificarProgramasCriticos(
   transferencias: TransferenciaFederal[]
@@ -30,6 +31,9 @@ export function identificarProgramasCriticos(
       percentual_execucao: t.percentual_execucao,
       prazo_limite: t.prazo_limite,
     }))
+    // Sort by risk value descending, keep top N to avoid Claude prompt overflow
+    .sort((a, b) => Math.max(0, b.valor_empenhado - b.valor_pago) - Math.max(0, a.valor_empenhado - a.valor_pago))
+    .slice(0, MAX_PROGRAMAS_CRITICOS)
 }
 
 export function calcularRisco(criticos: ProgramaCritico[]): {

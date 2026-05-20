@@ -15,7 +15,7 @@ export interface RiscoBriefing {
 export function calcularRiscoBriefing(emendas: EmendaParlamentar[]): RiscoBriefing {
   const valorTotal = emendas.reduce((s, e) => s + e.valor_autorizado, 0)
   const valorExecutado = emendas.reduce((s, e) => s + e.valor_executado, 0)
-  const valorEmRisco = emendas.reduce((s, e) => s + (e.valor_autorizado - e.valor_executado), 0)
+  const valorEmRisco = emendas.reduce((s, e) => s + Math.max(0, e.valor_autorizado - e.valor_executado), 0)
   const percentualExecutado = valorTotal > 0 ? (valorExecutado / valorTotal) * 100 : 0
 
   const hoje = new Date(new Date().toISOString().slice(0, 10) + 'T12:00:00Z')
@@ -68,9 +68,9 @@ export function calcularScoresMunicipios(
   const scored: MunicipioRecomendado[] = []
   for (const [ibge, { autorizado, empenhado, municipio }] of agg) {
     const disponivel = autorizado - empenhado
-    const scoreAlocacao = autorizado > 0 ? (disponivel / autorizado) * 100 : 0
+    const scoreAlocacao = Math.max(0, Math.min(100, autorizado > 0 ? (disponivel / autorizado) * 100 : 0))
     const scoreCapacidade = municipio.cauc_regular ? 100 : 0
-    const scoreIdh = (1 - (municipio.idh ?? 0.5)) * 100
+    const scoreIdh = Math.max(0, Math.min(100, (1 - (municipio.idh ?? 0.5)) * 100))
     const scoreTotal = Math.round(scoreAlocacao * 0.4 + scoreCapacidade * 0.4 + scoreIdh * 0.2)
 
     const partes: string[] = []

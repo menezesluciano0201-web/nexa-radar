@@ -59,7 +59,7 @@ export default async function AdminBriefingPage({
     <div className="max-w-3xl space-y-6">
       {actionError && (
         <div className="rounded-md bg-red-900/30 border border-red-700 px-4 py-3 text-sm text-red-300">
-          {decodeURIComponent(actionError)}
+          {actionError === 'update_failed' ? 'Falha ao atualizar status. Tente novamente.' : 'Erro desconhecido.'}
         </div>
       )}
       {/* Cabeçalho */}

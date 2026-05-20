@@ -19,7 +19,7 @@ export async function marcarDiagnosticoEntregue(formData: FormData) {
 
   if (error) {
     console.error('[marcarDiagnosticoEntregue] update failed:', error.message)
-    redirect(`/admin/diagnostico/${id}?error=Falha+ao+atualizar+status`)
+    redirect(`/admin/diagnostico/${id}?error=update_failed`)
   }
 
   revalidatePath(`/admin/diagnostico/${id}`)

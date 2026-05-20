@@ -25,7 +25,13 @@ export default async function AdminParlamentarDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const parlamentarId = decodeURIComponent(id)
+  let parlamentarId: string
+  try {
+    parlamentarId = decodeURIComponent(id)
+  } catch {
+    notFound()
+    return // unreachable but satisfies TS control flow
+  }
   const admin = await requireAdminClient()
 
   const [{ data: emendas }, { data: briefings }] = await Promise.all([

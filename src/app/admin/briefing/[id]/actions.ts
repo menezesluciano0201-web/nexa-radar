@@ -19,7 +19,7 @@ export async function marcarBriefingEntregue(formData: FormData) {
 
   if (error) {
     console.error('[marcarBriefingEntregue] update failed:', error.message)
-    redirect(`/admin/briefing/${id}?error=Falha+ao+atualizar+status`)
+    redirect(`/admin/briefing/${id}?error=update_failed`)
   }
 
   revalidatePath(`/admin/briefing/${id}`)
