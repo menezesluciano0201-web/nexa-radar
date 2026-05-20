@@ -2,7 +2,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { signOut } from '@/app/login/actions'
-import { LogOut, Home, FileText, Bell, TrendingDown } from 'lucide-react'
+import { LogOut, Home, FileText, Bell, TrendingDown, BookOpen } from 'lucide-react'
 import Link from 'next/link'
 import type { UserTipo } from '@/types'
 
@@ -18,6 +18,7 @@ function getNavItems(tipo: UserTipo) {
   }
   if (tipo === 'deputado' || tipo === 'senador') {
     base.push({ href: '/portal/emendas', label: 'Emendas', icon: TrendingDown })
+    base.push({ href: '/portal/briefing', label: 'Briefing', icon: BookOpen })
   }
   return base
 }
