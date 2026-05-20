@@ -32,11 +32,12 @@ export default function DiagnosticoForm({ municipios }: Props) {
 
     const supabase = createClient()
 
-    // Declare channel binding before cleanup so the closure captures the variable safely
-    let channel: ReturnType<typeof supabase.channel>
+    // Declare channel binding before cleanup so the closure captures the variable safely.
+    // Initialized to null so cleanup() is safe even if called before channel is assigned.
+    let channel: ReturnType<typeof supabase.channel> | null = null
 
     function cleanup() {
-      channel.unsubscribe()
+      channel?.unsubscribe()
       if (pollRef.current) clearInterval(pollRef.current)
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }

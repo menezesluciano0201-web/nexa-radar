@@ -7,6 +7,9 @@ load_dotenv()
 SUPABASE_URL: str = os.environ["SUPABASE_URL"]
 SUPABASE_KEY: str = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 PORTAL_API_KEY: str = os.environ.get("PORTAL_TRANSPARENCIA_API_KEY", "")
+if not PORTAL_API_KEY:
+    import warnings
+    warnings.warn("PORTAL_TRANSPARENCIA_API_KEY is not set — portal_transparencia scraper will return no data", stacklevel=1)
 
 RATE_LIMIT_SECONDS: float = 0.3   # 300ms entre requests
 

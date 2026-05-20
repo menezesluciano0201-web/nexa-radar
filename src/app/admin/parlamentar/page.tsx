@@ -9,11 +9,12 @@ function brl(v: number) {
 export default async function AdminParlamentarPage() {
   const admin = await requireAdminClient()
 
-  // Agrupar emendas por parlamentar (todos os anos)
+  // Agrupar emendas por parlamentar (todos os anos); limit prevents unbounded fetch as data grows
   const { data: emendas } = await admin
     .from('emendas_parlamentares')
     .select('parlamentar_id, parlamentar_nome, valor_autorizado, exercicio')
     .order('parlamentar_nome')
+    .limit(20_000)
 
   if (!emendas?.length) {
     return (

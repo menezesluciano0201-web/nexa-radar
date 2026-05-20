@@ -32,6 +32,7 @@ export default async function PortalEmendasPage() {
     .eq('parlamentar_id', profile.parlamentar_id)
     .order('exercicio', { ascending: false })
     .order('valor_autorizado', { ascending: false })
+    .limit(500)
 
   const totalAutorizado = (emendas ?? []).reduce((s, e) => s + e.valor_autorizado, 0)
   const totalEmRisco = (emendas ?? []).reduce((s, e) => s + (e.valor_autorizado - e.valor_executado), 0)

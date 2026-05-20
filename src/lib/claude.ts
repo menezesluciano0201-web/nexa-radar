@@ -2,9 +2,10 @@
 import 'server-only'
 import Anthropic from '@anthropic-ai/sdk'
 
+// Timeout set to 65s — generation takes 30–60s; 30s was too short and caused false errors.
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
-  timeout: 30_000,
+  timeout: 65_000,
 })
 
 const MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-20250514'

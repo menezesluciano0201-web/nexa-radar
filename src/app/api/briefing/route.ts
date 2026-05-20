@@ -22,6 +22,8 @@ export async function POST(request: NextRequest) {
 
   if (!body.parlamentar_id)
     return NextResponse.json({ error: 'parlamentar_id required' }, { status: 400 })
+  if (body.parlamentar_id.length > 50)
+    return NextResponse.json({ error: 'parlamentar_id too long' }, { status: 400 })
 
   const admin = createAdminClient()
 

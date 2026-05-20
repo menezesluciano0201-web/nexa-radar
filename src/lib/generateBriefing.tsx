@@ -24,7 +24,8 @@ export async function generateBriefing(
           .select(
             'id,parlamentar_id,parlamentar_nome,tipo,parlamentar_tipo,municipio_ibge,area_tematica,valor_autorizado,valor_empenhado,valor_executado,percentual_execucao,prazo_limite,status_cauc,exercicio,fonte,coletado_em'
           )
-          .eq('parlamentar_id', parlamentarId),
+          .eq('parlamentar_id', parlamentarId)
+          .limit(5000),
         admin
           .from('municipios_habilitacao')
           .select('ibge,nome,uf,populacao,idh,cauc_regular,ultima_verificacao,programas_habilitados,programas_bloqueados'),
@@ -37,7 +38,9 @@ export async function generateBriefing(
     const municipiosList = (municipios ?? []) as MunicipioHabilitacao[]
 
     if (!emendasList.length) throw new Error(`Nenhuma emenda para parlamentar_id=${parlamentarId}`)
-    if (!municipiosList.length) console.warn(`[generateBriefing] id=${id}: municipios_habilitacao vazio — top5 será []`)
+    if (emendasList.length >= 5000)
+      console.warn('[generateBriefing] id=%s: emendas hit limit 5000 — data may be incomplete', id)
+    if (!municipiosList.length) console.warn('[generateBriefing] id=%s: municipios_habilitacao vazio — top5 será []', id)
 
     const parlamentarNome = emendasList[0].parlamentar_nome ?? parlamentarId
 

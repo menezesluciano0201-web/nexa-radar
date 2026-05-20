@@ -27,7 +27,8 @@ export async function generateDiagnostico(
         admin
           .from('transferencias_federais')
           .select('id,municipio_ibge,programa,fundo,valor_empenhado,valor_liquidado,valor_pago,percentual_execucao,competencia,prazo_limite,fonte,coletado_em')
-          .eq('municipio_ibge', municipioIbge),
+          .eq('municipio_ibge', municipioIbge)
+          .limit(5000),
         admin
           .from('municipios_habilitacao')
           .select('nome, uf')
@@ -37,6 +38,9 @@ export async function generateDiagnostico(
 
     if (te) throw te
     if (me || !municipio) throw me ?? new Error(`Município ${municipioIbge} não encontrado`)
+
+    if ((transferencias?.length ?? 0) >= 5000)
+      console.warn('[generateDiagnostico] id=%s: transferencias hit limit 5000 — data may be incomplete', id)
 
     // 2. Computar programas críticos e risco
     const programasCriticos = identificarProgramasCriticos(

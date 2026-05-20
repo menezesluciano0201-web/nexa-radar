@@ -5,9 +5,18 @@ interface LoginPageProps {
   searchParams: Promise<{ error?: string; next?: string }>
 }
 
+// Map server-emitted error codes to display strings.
+// Using codes (not raw messages) prevents attacker-controlled text from being rendered.
+const LOGIN_ERRORS: Record<string, string> = {
+  required:            'E-mail e senha são obrigatórios',
+  invalid_credentials: 'Credenciais inválidas',
+  login_error:         'Erro ao fazer login. Tente novamente.',
+  not_configured:      'Conta não configurada. Contate a equipe Nexa Radar.',
+}
+
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams
-  const errorMsg = params.error
+  const safeError = params.error ? (LOGIN_ERRORS[params.error] ?? 'Erro ao fazer login. Tente novamente.') : null
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900">
@@ -21,9 +30,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         </div>
 
         {/* Error message */}
-        {errorMsg && (
+        {safeError && (
           <div className="rounded-md bg-red-900/50 border border-red-700 px-4 py-3 text-sm text-red-300">
-            {decodeURIComponent(errorMsg)}
+            {safeError}
           </div>
         )}
 

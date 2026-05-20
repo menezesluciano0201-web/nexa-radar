@@ -36,11 +36,12 @@ export default async function AdminDiagnosticoPage({
 
   if (!diagnostico) notFound()
 
-  const { data: municipio } = await admin
+  const { data: municipio, error: munErr } = await admin
     .from('municipios_habilitacao')
     .select('nome, uf')
     .eq('ibge', diagnostico.municipio_ibge)
     .single()
+  if (munErr) console.error('[admin/diagnostico/%s] municipio lookup failed: %s', id, munErr.message)
 
   const programasCriticos: ProgramaCritico[] = Array.isArray(diagnostico.programas_criticos)
     ? (diagnostico.programas_criticos as ProgramaCritico[])

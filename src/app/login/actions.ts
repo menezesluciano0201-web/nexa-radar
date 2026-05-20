@@ -13,16 +13,14 @@ export async function signIn(formData: FormData) {
   const next = (formData.get('next') as string | null) ?? ''
 
   if (!email || !password) {
-    redirect('/login?error=E-mail%20e%20senha%20s%C3%A3o%20obrigat%C3%B3rios')
+    redirect('/login?error=required')
   }
 
   const { error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error) {
-    const msg = error.code === 'invalid_credentials'
-      ? 'Credenciais inválidas'
-      : 'Erro ao fazer login. Tente novamente.'
-    redirect(`/login?error=${encodeURIComponent(msg)}`)
+    const code = error.code === 'invalid_credentials' ? 'invalid_credentials' : 'login_error'
+    redirect(`/login?error=${code}`)
   }
 
   revalidatePath('/', 'layout')

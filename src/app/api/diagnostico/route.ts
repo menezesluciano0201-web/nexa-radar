@@ -38,6 +38,9 @@ export async function POST(request: NextRequest) {
   if (!body.municipio_ibge) {
     return NextResponse.json({ error: 'municipio_ibge required' }, { status: 400 })
   }
+  if (!/^\d{7}$/.test(body.municipio_ibge)) {
+    return NextResponse.json({ error: 'municipio_ibge must be a 7-digit IBGE code' }, { status: 400 })
+  }
 
   // 3b. Verificar que o município existe — evita criar row 'gerando' que nunca resolve
   const admin = createAdminClient()
