@@ -37,3 +37,9 @@ EIXOS: dict[str, list[str]] = {
 AREA_TEMATICA_POR_PROGRAMA: dict[str, str] = {
     p: eixo for eixo, programas in EIXOS.items() for p in programas
 }
+
+# UF por código IBGE — derivado de MUNICIPIOS_ATIVOS (evita string splitting em run.py)
+IBGE_TO_UF: dict[str, str] = {
+    ibge: nome.rsplit(" - ", 1)[-1]
+    for nome, ibge in MUNICIPIOS_ATIVOS.items()
+}

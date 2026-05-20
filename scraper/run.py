@@ -7,7 +7,7 @@ import logging
 import sys
 from datetime import datetime
 
-from scraper.config import MUNICIPIOS_ATIVOS
+from scraper.config import MUNICIPIOS_ATIVOS, IBGE_TO_UF
 from scraper.supabase_client import upsert
 from scraper.sources.portal_transparencia import coletar_transferencias
 from scraper.sources.siga_brasil import coletar_emendas_individuais
@@ -49,7 +49,7 @@ def coletar_municipio(ibge: str, nome: str) -> None:
                on_conflict="municipio_ibge,programa,fonte,competencia")
 
     # Portais estaduais (semi-automático)
-    uf = nome.split(" - ")[-1] if " - " in nome else ""
+    uf = IBGE_TO_UF.get(ibge, "")
     estadual = tentar_coletar_estadual(uf, ibge)
     if not estadual:
         registrar_pendencia_manual(ibge, uf, "Coleta estadual requer validação manual")

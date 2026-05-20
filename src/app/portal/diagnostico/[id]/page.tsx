@@ -20,7 +20,9 @@ export default async function PortalDiagnosticoDetailPage({
 
   if (!diagnostico) notFound()
 
-  const programasCriticos = (diagnostico.programas_criticos ?? []) as ProgramaCritico[]
+  const programasCriticos: ProgramaCritico[] = Array.isArray(diagnostico.programas_criticos)
+    ? (diagnostico.programas_criticos as ProgramaCritico[])
+    : []
 
   // Signed URL via user client — storage RLS (migration 006) valida o acesso por município
   let pdfSignedUrl: string | null = null

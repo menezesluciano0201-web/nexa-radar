@@ -42,7 +42,9 @@ export default async function AdminDiagnosticoPage({
     .eq('ibge', diagnostico.municipio_ibge)
     .single()
 
-  const programasCriticos = (diagnostico.programas_criticos ?? []) as ProgramaCritico[]
+  const programasCriticos: ProgramaCritico[] = Array.isArray(diagnostico.programas_criticos)
+    ? (diagnostico.programas_criticos as ProgramaCritico[])
+    : []
 
   // Gerar signed URL (bucket privado, válida por 1h)
   let pdfSignedUrl: string | null = null

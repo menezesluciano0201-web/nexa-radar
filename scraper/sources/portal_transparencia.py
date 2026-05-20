@@ -36,6 +36,11 @@ class PortalTransparenciaClient:
                 log.error("Portal Transparência erro em %s: %s", endpoint, e)
                 break
             if not data:
+                if pagina > 1:
+                    log.debug(
+                        "Portal Transparência | %s | paginação encerrada na página %d (lista vazia)",
+                        endpoint, pagina,
+                    )
                 break
             results.extend(data)
             pagina += 1

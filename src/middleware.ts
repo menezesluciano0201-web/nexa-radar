@@ -26,7 +26,11 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session — required for Server Components to read auth state
+  // IMPORTANT: getUser() validates the JWT with Supabase's auth server on every request.
+  // Per @supabase/ssr docs, we must: (1) create the client, (2) call getUser(),
+  // (3) always return `supabaseResponse` (never a new NextResponse.next()) so the
+  // Set-Cookie session-refresh headers are forwarded to the browser.
+  // Redirects are safe because they don't carry cookies — only supabaseResponse does.
   const { data: { user } } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
