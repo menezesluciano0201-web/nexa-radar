@@ -18,14 +18,16 @@ PORTAIS = {
 }
 
 
-def tentar_coletar_estadual(uf: str, ibge: str) -> list[dict]:
+def tentar_coletar_estadual(uf: str, ibge: str) -> list[dict] | None:
     """
-    Tenta scraping do portal estadual. Retorna lista vazia se falhar.
-    Resultado desta função DEVE ser validado manualmente antes de inserção.
+    Tenta scraping do portal estadual.
+    Retorna None quando parsing ainda não está implementado (pendência manual).
+    Retorna [] quando implementado mas sem dados.
+    Retorna list[dict] com dados coletados e validados.
     """
     if uf not in PORTAIS:
         log.warning("UF %s não mapeada nos portais estaduais", uf)
-        return []
+        return None  # não implementado
 
     url = PORTAIS[uf]
     try:
@@ -36,10 +38,10 @@ def tentar_coletar_estadual(uf: str, ibge: str) -> list[dict]:
         )
         r.raise_for_status()
         log.info("Portal %s respondeu (status %s) — parsing pendente de implementação", uf, r.status_code)
-        return []
+        return None  # portal acessível mas parsing não implementado
     except requests.RequestException as e:
         log.warning("Portal estadual %s indisponível: %s — requer validação manual", uf, e)
-        return []
+        return None  # não acessível
     finally:
         time.sleep(RATE_LIMIT_SECONDS)
 

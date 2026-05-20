@@ -6,7 +6,7 @@ Endpoint: https://www12.senado.leg.br/orcamento/sparql
 import time
 import logging
 from SPARQLWrapper import SPARQLWrapper, JSON
-from scraper.config import RATE_LIMIT_SECONDS, USER_AGENT
+from scraper.config import RATE_LIMIT_SECONDS, USER_AGENT, IBGE_ATIVOS
 
 log = logging.getLogger(__name__)
 
@@ -54,12 +54,19 @@ def coletar_emendas_individuais(ano: int) -> list[dict]:
             "SIGA Brasil | %d | LIMIT 10000 atingido nos bindings brutos — resultados podem estar incompletos",
             ano,
         )
+    skipped_ibge = 0
     for b in bindings:
         ibge = b.get("codigoIbge", {}).get("value")
         if not ibge:
             continue  # skip emendas sem município vinculado
+        if ibge not in IBGE_ATIVOS:
+            skipped_ibge += 1
+            continue  # skip municípios fora do escopo ativo
+        parlamentar_id = b.get("autoria", {}).get("value")
+        if not parlamentar_id:
+            continue  # skip emendas sem autoria — evita colapso em DESCONHECIDO
         rows.append({
-            "parlamentar_id":   b.get("autoria", {}).get("value", "DESCONHECIDO"),
+            "parlamentar_id":   parlamentar_id,
             "parlamentar_nome": b.get("nomeAutor", {}).get("value", ""),
             "tipo":             "RP6",
             "parlamentar_tipo": "individual",
@@ -71,5 +78,8 @@ def coletar_emendas_individuais(ano: int) -> list[dict]:
             "exercicio":        ano,
             "fonte":            "siga_brasil",
         })
-    log.info("SIGA Brasil | %d | %d emendas individuais (%d bindings brutos)", ano, len(rows), len(bindings))
+    log.info(
+        "SIGA Brasil | %d | %d emendas | %d bindings brutos | %d ignorados (ibge fora do escopo)",
+        ano, len(rows), len(bindings), skipped_ibge,
+    )
     return rows

@@ -27,4 +27,5 @@ export async function marcarDiagnosticoEntregue(formData: FormData) {
     .eq('id', id)
 
   revalidatePath(`/admin/diagnostico/${id}`)
+  revalidatePath('/portal/diagnostico', 'page')
 }

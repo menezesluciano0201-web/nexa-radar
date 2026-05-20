@@ -43,3 +43,6 @@ IBGE_TO_UF: dict[str, str] = {
     ibge: nome.rsplit(" - ", 1)[-1]
     for nome, ibge in MUNICIPIOS_ATIVOS.items()
 }
+
+# Conjunto de IBGEs ativos para filtragem rápida nos scrapers
+IBGE_ATIVOS: frozenset[str] = frozenset(MUNICIPIOS_ATIVOS.values())

@@ -20,6 +20,9 @@ export async function gerarTexto(prompt: string): Promise<string> {
   if (!message.content.length) {
     throw new Error('Claude returned empty content')
   }
+  if (message.stop_reason === 'max_tokens') {
+    console.warn('[claude] resposta truncada em max_tokens=%d — considere aumentar MAX_TOKENS', MAX_TOKENS)
+  }
   const block = message.content[0]
   if (block.type !== 'text') {
     throw new Error(`Unexpected Claude response type: ${block.type}`)

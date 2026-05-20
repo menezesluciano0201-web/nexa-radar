@@ -50,6 +50,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Município não encontrado' }, { status: 404 })
   }
 
+  // 3c. Dedup: impedir spam de geração para o mesmo município
+  const { count: gerando } = await admin
+    .from('diagnosticos')
+    .select('id', { count: 'exact', head: true })
+    .eq('municipio_ibge', body.municipio_ibge)
+    .eq('status', 'gerando')
+
+  if (gerando && gerando > 0) {
+    return NextResponse.json(
+      { error: 'Já existe um diagnóstico em geração para este município' },
+      { status: 409 }
+    )
+  }
+
   // 4. Criar registro com status='gerando'
   const { data: diagnostico, error } = await admin
     .from('diagnosticos')

@@ -27,11 +27,23 @@ export default async function PortalDiagnosticoPage() {
     .eq('id', user.id)
     .single()
 
+  if (!profile?.municipio_ibge) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold text-slate-100 mb-6">Diagnósticos</h1>
+        <p className="text-slate-400 text-sm">
+          Diagnósticos municipais não estão disponíveis para este tipo de perfil.
+          Para acesso, entre em contato com a equipe Nexa Radar.
+        </p>
+      </div>
+    )
+  }
+
   // Belt-and-suspenders: RLS já filtra, mas sendo explícito evita vazamento em misconfiguration
   const { data: diagnosticos } = await supabase
     .from('diagnosticos')
     .select('id, status, valor_total_identificado, valor_em_risco, criado_em')
-    .eq('municipio_ibge', profile?.municipio_ibge ?? '')
+    .eq('municipio_ibge', profile.municipio_ibge)
     .order('criado_em', { ascending: false })
 
   return (

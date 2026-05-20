@@ -51,8 +51,12 @@ def coletar_municipio(ibge: str, nome: str) -> None:
     # Portais estaduais (semi-automático)
     uf = IBGE_TO_UF.get(ibge, "")
     estadual = tentar_coletar_estadual(uf, ibge)
-    if not estadual:
+    if estadual is None:
+        # None = parsing não implementado ou portal inacessível
         registrar_pendencia_manual(ibge, uf, "Coleta estadual requer validação manual")
+    elif estadual:
+        upsert("transferencias_federais", estadual,
+               on_conflict="municipio_ibge,programa,fonte,competencia")
 
     # Processar
     atualizar_programas_habilitados(ibge)
