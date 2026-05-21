@@ -346,7 +346,7 @@ type StatusProjeto = 'gerando' | 'rascunho' | 'erro'
 
 interface ProjetoInputs {
   diagnostico_id: string
-  municipio_ibge: string          // derivado do diagnóstico pelo POST route
+  municipio_ibge: string          // derivado pelo POST route — não enviar no body do cliente
   template: TemplateName
   objeto: string
   justificativa: string
