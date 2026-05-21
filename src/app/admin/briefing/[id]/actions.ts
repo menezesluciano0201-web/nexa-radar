@@ -3,8 +3,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { requireAdminClient } from '@/lib/require-admin'
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { UUID_RE } from '@/lib/format'
 
 export async function marcarBriefingEntregue(formData: FormData) {
   const id = (formData.get('id') as string | null) ?? ''

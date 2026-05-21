@@ -4,7 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 
 function statusBadge(status: string) {
-  if (status === 'entregue') return 'bg-green-900/50 text-green-300 border-green-800'
+  if (status === 'entregue')   return 'bg-green-900/50 text-green-300 border-green-800'
+  if (status === 'convertido') return 'bg-sky-900/50 text-sky-300 border-sky-800'
   return 'bg-slate-700/50 text-slate-300 border-slate-600'
 }
 
@@ -27,12 +28,12 @@ export default async function PortalBriefingPage() {
     )
   }
 
-  // RLS (migration 019) scopes by parlamentar_id + status='entregue'; explicit filter is belt-and-suspenders
+  // RLS (migration 025) scopes by parlamentar_id + status IN ('entregue','convertido'); explicit filter is belt-and-suspenders
   const { data: briefings } = await supabase
     .from('briefings')
     .select('id, status, valor_total_emendas, valor_em_risco, criado_em')
     .eq('parlamentar_id', profile.parlamentar_id)
-    .eq('status', 'entregue')
+    .in('status', ['entregue', 'convertido'])
     .order('criado_em', { ascending: false })
     .limit(50)
 

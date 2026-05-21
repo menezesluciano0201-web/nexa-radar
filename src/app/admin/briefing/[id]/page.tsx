@@ -3,17 +3,16 @@ import { notFound } from 'next/navigation'
 import { requireAdminClient } from '@/lib/require-admin'
 import { marcarBriefingEntregue, resetBriefingGerando } from './actions'
 import type { MunicipioRecomendado } from '@/types'
-import { brl } from '@/lib/format'
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { brl, UUID_RE } from '@/lib/format'
 
 function statusColor(status: string) {
   switch (status) {
-    case 'gerando':  return 'text-yellow-400'
-    case 'rascunho': return 'text-blue-400'
-    case 'entregue': return 'text-green-400'
-    case 'erro':     return 'text-red-400'
-    default:         return 'text-slate-400'
+    case 'gerando':    return 'text-yellow-400'
+    case 'rascunho':   return 'text-blue-400'
+    case 'entregue':   return 'text-green-400'
+    case 'convertido': return 'text-nexa-400'
+    case 'erro':       return 'text-red-400'
+    default:           return 'text-slate-400'
   }
 }
 

@@ -3,8 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requireAdminClient } from '@/lib/require-admin'
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { UUID_RE } from '@/lib/format'
 
 export async function marcarDiagnosticoEntregue(formData: FormData) {
   const id = (formData.get('id') as string | null) ?? ''
@@ -45,5 +44,6 @@ export async function resetDiagnosticoGerando(formData: FormData) {
   }
 
   revalidatePath(`/admin/diagnostico/${id}`)
+  revalidatePath('/portal/diagnostico', 'page')
   redirect(`/admin/diagnostico/${id}`)
 }

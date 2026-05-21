@@ -4,8 +4,7 @@
 // so we test the validation regex in isolation.
 
 import { describe, test, expect } from 'vitest'
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { UUID_RE } from '@/lib/format'
 
 describe('UUID_RE validation (mirrors marcarDiagnosticoEntregue guard)', () => {
   test('valid UUID v4 passes', () => {

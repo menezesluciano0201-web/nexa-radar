@@ -2,9 +2,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { MunicipioRecomendado } from '@/types'
-import { brl } from '@/lib/format'
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { brl, UUID_RE } from '@/lib/format'
 
 export default async function PortalBriefingDetailPage({
   params,
@@ -22,7 +20,7 @@ export default async function PortalBriefingDetailPage({
     .from('briefings')
     .select('id,status,parlamentar_id,valor_total_emendas,valor_em_risco,municipios_recomendados,texto_ia,pdf_url,criado_em')
     .eq('id', id)
-    .eq('status', 'entregue')
+    .in('status', ['entregue', 'convertido'])
     .single()
 
   if (!briefing) notFound()
