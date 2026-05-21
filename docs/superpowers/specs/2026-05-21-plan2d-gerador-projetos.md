@@ -120,8 +120,10 @@ Cada template é um arquivo TypeScript em `src/lib/templates/` que exporta um `T
 interface CampoForm {
   nome: string
   label: string
-  tipo: 'text' | 'number' | 'select' | 'textarea'
-  opcoes?: string[]   // para tipo 'select'
+  tipo: 'text' | 'number' | 'select' | 'textarea' | 'checkbox' | 'multi-select'
+  // 'checkbox': boolean sim/não (ex: TEA — exige laudo)
+  // 'multi-select': múltiplas opções (ex: SCFV — faixas etárias)
+  opcoes?: string[]   // para tipo 'select' e 'multi-select'
   obrigatorio: boolean
 }
 
@@ -168,7 +170,7 @@ interface TemplateConfig {
 | `idoso` | Modalidade (Centro-Dia / ILPI / Serviço Domiciliar) |
 | `esporte` | Modalidades esportivas, faixa etária alvo, equipamentos solicitados |
 | `saude_basica` | Tipo de equipe (ESF / NASF / UBS), número de equipes |
-| `educacao` | Nível (fundamental / médio), programa FNDE (PNAE / PDDE / Proinfância) |
+| `educacao` | Nível (fundamental / médio), programa FNDE (PNAE / PDDE / Proinfância) — o programa selecionado deve ser incluído no prompt para que Claude use a terminologia e os critérios corretos por sub-programa |
 
 ---
 
@@ -219,9 +221,13 @@ Adicionar ao `claude.ts` existente:
 export async function gerarProjeto(prompt: string): Promise<SecoesProjeto> {
   const message = await client.messages.create({
     model: MODEL,
-    max_tokens: 8192,   // projetos são documentos longos — 4096 do padrão é insuficiente
+    max_tokens: 8192,   // projetos longos — 4096 é insuficiente. CAPS pode precisar de 16384.
     messages: [{ role: 'user', content: prompt }],
   })
+  // Guardar contra truncamento (especialmente em templates longos como CAPS)
+  if (message.stop_reason === 'max_tokens') {
+    throw new Error('Claude response truncated at max_tokens=8192 — considerar aumentar para 16384 se CAPS falhar sistematicamente')
+  }
   const text = message.content[0].type === 'text' ? message.content[0].text : ''
   // Extrair JSON do bloco ```json ... ``` se necessário
   const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) ?? text.match(/(\{[\s\S]*\})/)
@@ -234,18 +240,20 @@ O `timeout` do client já é 65s (configurado no wrapper existente).
 
 ### `src/lib/generateProjeto.tsx` (server-only)
 
+Pipeline roda fire-and-forget em Node.js persistente (EasyPanel always-on). Duração total estimada: até ~80s (Claude ≤65s + renderização + uploads). Seguro porque o 202 já foi enviado antes do pipeline iniciar. Não compatível com Vercel serverless.
+
 ```
 1. Buscar diagnóstico + dados do município em paralelo (Promise.all)
 2. Carregar TemplateConfig via registry
 3. Montar prompt: gerarPromptProjeto(config, inputs, municipioNome, programasCriticos)
 4. gerarProjeto(prompt) → SecoesProjeto via Claude (max_tokens: 8192)
-5. Gerar PDF via @react-pdf/renderer (ProjetoPDF)
-6. Gerar Word via `docx` → Packer.toBuffer() → Buffer
-7. Upload PDF → Storage: projetos/projeto-{id}.pdf
-8. Upload Word → Storage: projetos/projeto-{id}.docx
-9. UPDATE projetos SET status='rascunho', secoes_ia, pdf_url, docx_url
+5. Gerar PDF e Word em paralelo: Promise.all([renderToBuffer(ProjetoPDF), Packer.toBuffer(ProjetoDocx)])
+6. Upload PDF e Word em paralelo: Promise.all([storage.upload(pdf), storage.upload(docx)])
+7. UPDATE projetos SET status='rascunho', secoes_ia, pdf_url, docx_url
    └── catch: UPDATE status='erro' WHERE status='gerando'
 ```
+
+*Regeneração intencional: o dedup index previne apenas geração concorrente do mesmo par. Uma vez concluída (status ≠ 'gerando'), o admin pode regenerar livremente.*
 
 ### Saída estruturada do Claude — `SecoesProjeto`
 
@@ -302,15 +310,15 @@ Estrutura do documento: capa → identificação do proponente → seções em `
 
 **Bloco 3 — Campos dinâmicos** (renderizados dinamicamente por `TemplateConfig.camposEspecificos` ao mudar o template)
 
-Submit → POST `/api/projeto` → redirect para `/admin/projeto/[id]` com Realtime subscription em `projetos` (padrão do `BriefingForm` existente — `projetos` estará na publicação Realtime por conta da migration Task 1).
+Submit → `ProjetoForm` (client component, padrão idêntico ao `BriefingForm.tsx`) chama POST `/api/projeto`, aguarda o `id` retornado, assina `postgres_changes` em `projetos WHERE id = {id}`, e navega para `/admin/projeto/${id}` **somente após receber status `rascunho` ou `erro` via Realtime**. O redirect não acontece imediatamente após o 202 — a subscription fica ativa na mesma página enquanto o pipeline roda.
 
 ### `/admin/projeto/[id]`
 
 - Status badge + timestamp
-- Botão **↓ Baixar PDF** (signed URL 1h)
-- Botão **↓ Baixar Word** (signed URL 1h)
+- Botão **↓ Baixar PDF** — `createSignedUrl(projeto.pdf_url, 3600)` do bucket `projetos`
+- Botão **↓ Baixar Word** — `createSignedUrl(projeto.docx_url, 3600)` do bucket `projetos` (ambos gerados em paralelo no server component)
 - Resumo: template · órgão · município · valor solicitado · nº beneficiários
-- Seções geradas exibidas em acordeões colapsáveis (admin revisa sem baixar)
+- Seções geradas exibidas em acordeões colapsáveis — iterar `TemplateConfig.secoes`, exibir `secoes_ia?.secoes_texto[secao.id]` com guard de presença antes de renderizar
 - Botão "Forçar reset" se status = 'gerando' há mais de 10 min (padrão existente)
 
 ### `/admin/projeto`
