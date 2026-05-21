@@ -4,10 +4,7 @@ import { requireAdminClient } from '@/lib/require-admin'
 import Link from 'next/link'
 import BriefingForm from '@/components/briefing/BriefingForm'
 import type { EmendaParlamentar } from '@/types'
-
-function brl(v: number) {
-  return `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
-}
+import { brl } from '@/lib/format'
 
 function statusBadge(status: string) {
   switch (status) {

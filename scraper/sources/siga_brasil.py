@@ -39,6 +39,12 @@ def coletar_emendas_individuais(ano: int) -> list[dict]:
     """Retorna rows prontas para inserção em emendas_parlamentares."""
     if not (2000 <= ano <= 2100):
         raise ValueError(f"ano fora do intervalo esperado: {ano}")
+    if len(IBGE_ATIVOS) > 200:
+        log.warning(
+            "SIGA Brasil | IBGE_ATIVOS tem %d entradas — VALUES clause pode exceder limites do endpoint SPARQL. "
+            "Threshold: ~200 IBGE codes por query. Implementar paginação por batches.",
+            len(IBGE_ATIVOS),
+        )
     ibge_values = " ".join(f'"{ibge}"' for ibge in IBGE_ATIVOS)
     sparql = SPARQLWrapper(SPARQL_ENDPOINT)
     sparql.addCustomHttpHeader("User-Agent", USER_AGENT)

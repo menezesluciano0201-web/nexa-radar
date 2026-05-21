@@ -1,10 +1,7 @@
 // src/app/portal/emendas/page.tsx
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-
-function brl(v: number) {
-  return `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
-}
+import { brl } from '@/lib/format'
 
 export default async function PortalEmendasPage() {
   const supabase = await createClient()
@@ -37,6 +34,15 @@ export default async function PortalEmendasPage() {
   const totalAutorizado = (emendas ?? []).reduce((s, e) => s + e.valor_autorizado, 0)
   const totalEmRisco = (emendas ?? []).reduce((s, e) => s + Math.max(0, e.valor_autorizado - e.valor_executado), 0)
 
+  const ibgeCodes = [...new Set((emendas ?? []).map(e => e.municipio_ibge).filter(Boolean))]
+  const { data: municipios } = ibgeCodes.length > 0
+    ? await supabase
+        .from('municipios_habilitacao')
+        .select('ibge, nome, uf')
+        .in('ibge', ibgeCodes)
+    : { data: [] }
+  const nomeMunicipio = new Map((municipios ?? []).map(m => [m.ibge, `${m.nome} - ${m.uf}`]))
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-slate-100 mb-2">Minhas Emendas</h1>
@@ -53,7 +59,7 @@ export default async function PortalEmendasPage() {
               className="flex items-center justify-between rounded-md border border-slate-800 bg-slate-800/40 px-5 py-3">
               <div>
                 <p className="text-sm text-slate-300">
-                  {e.area_tematica ?? 'Sem área'} · {e.municipio_ibge ?? 'Nacional'}
+                  {e.area_tematica ?? 'Sem área'} · {e.municipio_ibge ? (nomeMunicipio.get(e.municipio_ibge) ?? e.municipio_ibge) : 'Nacional'}
                 </p>
                 <p className="text-xs text-slate-500 mt-0.5">
                   {e.tipo} · {e.exercicio}

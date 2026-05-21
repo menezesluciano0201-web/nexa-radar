@@ -27,3 +27,23 @@ export async function marcarBriefingEntregue(formData: FormData) {
   revalidatePath(`/portal/briefing/${id}`)
   redirect(`/admin/briefing/${id}`)
 }
+
+export async function resetBriefingGerando(formData: FormData) {
+  const id = (formData.get('id') as string | null) ?? ''
+  if (!UUID_RE.test(id)) redirect('/admin')
+
+  const admin = await requireAdminClient()
+  const { error } = await admin
+    .from('briefings')
+    .update({ status: 'erro' })
+    .eq('id', id)
+    .eq('status', 'gerando')
+
+  if (error) {
+    console.error('[resetBriefingGerando] update failed:', error.message)
+    redirect(`/admin/briefing/${id}?error=update_failed`)
+  }
+
+  revalidatePath(`/admin/briefing/${id}`)
+  redirect(`/admin/briefing/${id}`)
+}

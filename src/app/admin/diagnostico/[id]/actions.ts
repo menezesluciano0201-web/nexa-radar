@@ -27,3 +27,23 @@ export async function marcarDiagnosticoEntregue(formData: FormData) {
   revalidatePath(`/portal/diagnostico/${id}`)
   redirect(`/admin/diagnostico/${id}`)
 }
+
+export async function resetDiagnosticoGerando(formData: FormData) {
+  const id = (formData.get('id') as string | null) ?? ''
+  if (!UUID_RE.test(id)) redirect('/admin')
+
+  const admin = await requireAdminClient()
+  const { error } = await admin
+    .from('diagnosticos')
+    .update({ status: 'erro' })
+    .eq('id', id)
+    .eq('status', 'gerando')
+
+  if (error) {
+    console.error('[resetDiagnosticoGerando] update failed:', error.message)
+    redirect(`/admin/diagnostico/${id}?error=update_failed`)
+  }
+
+  revalidatePath(`/admin/diagnostico/${id}`)
+  redirect(`/admin/diagnostico/${id}`)
+}

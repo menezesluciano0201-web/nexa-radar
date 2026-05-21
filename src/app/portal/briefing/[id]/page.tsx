@@ -2,10 +2,9 @@
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import type { MunicipioRecomendado } from '@/types'
+import { brl } from '@/lib/format'
 
-function brl(v: number) {
-  return `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
-}
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export default async function PortalBriefingDetailPage({
   params,
@@ -13,6 +12,7 @@ export default async function PortalBriefingDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  if (!UUID_RE.test(id)) notFound()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')

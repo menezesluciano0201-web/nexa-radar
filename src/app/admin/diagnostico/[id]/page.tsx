@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { requireAdminClient } from '@/lib/require-admin'
-import { marcarDiagnosticoEntregue } from './actions'
+import { marcarDiagnosticoEntregue, resetDiagnosticoGerando } from './actions'
 import type { ProgramaCritico } from '@/types'
 
 function statusColor(status: string) {
@@ -20,6 +20,8 @@ function statusColor(status: string) {
   }
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export default async function AdminDiagnosticoPage({
   params,
   searchParams,
@@ -28,6 +30,7 @@ export default async function AdminDiagnosticoPage({
   searchParams: Promise<{ error?: string }>
 }) {
   const { id } = await params
+  if (!UUID_RE.test(id)) notFound()
   const { error: actionError } = await searchParams
   const admin = await requireAdminClient()
 
@@ -176,8 +179,19 @@ export default async function AdminDiagnosticoPage({
 
       {/* Estado gerando */}
       {diagnostico.status === 'gerando' && (
-        <div className="rounded-md bg-yellow-900/30 border border-yellow-700 px-4 py-3 text-sm text-yellow-300">
-          Diagnóstico em geração. Recarregue a página em alguns instantes.
+        <div className="rounded-md bg-yellow-900/30 border border-yellow-700 px-4 py-3 text-sm text-yellow-300 flex items-center justify-between gap-4">
+          <span>Diagnóstico em geração. Recarregue a página em alguns instantes.</span>
+          {new Date().getTime() - new Date(diagnostico.criado_em).getTime() > 10 * 60 * 1000 && (
+            <form action={resetDiagnosticoGerando}>
+              <input type="hidden" name="id" value={id} />
+              <button
+                type="submit"
+                className="rounded border border-yellow-600 px-3 py-1 text-xs text-yellow-300 hover:bg-yellow-800/30 transition-colors"
+              >
+                Forçar reset
+              </button>
+            </form>
+          )}
         </div>
       )}
 

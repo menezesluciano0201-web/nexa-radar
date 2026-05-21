@@ -2,6 +2,7 @@
 // Node.js only — used by generateBriefing.tsx via renderToBuffer
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import type { MunicipioRecomendado } from '@/types'
+import { brl } from '@/lib/format'
 
 const styles = StyleSheet.create({
   page:         { padding: 48, fontFamily: 'Helvetica', backgroundColor: '#ffffff', color: '#1e293b' },
@@ -28,9 +29,6 @@ const styles = StyleSheet.create({
   footer:       { position: 'absolute', bottom: 32, left: 48, right: 48, fontSize: 8, color: '#94a3b8', textAlign: 'center' },
 })
 
-function brl(v: number) {
-  return `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
-}
 
 export interface BriefingPDFProps {
   parlamentarNome: string

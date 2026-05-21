@@ -5,8 +5,6 @@ import Link from 'next/link'
 
 function statusBadge(status: string) {
   switch (status) {
-    case 'rascunho':
-      return 'bg-blue-900/50 text-blue-300 border-blue-800'
     case 'entregue':
       return 'bg-green-900/50 text-green-300 border-green-800'
     case 'convertido':

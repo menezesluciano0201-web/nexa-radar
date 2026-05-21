@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from '@react-pdf/renderer'
 import type { ProgramaCritico } from '@/types'
+import { brl } from '@/lib/format'
 
 const styles = StyleSheet.create({
   page:         { padding: 48, fontFamily: 'Helvetica', backgroundColor: '#ffffff', color: '#1e293b' },
@@ -33,9 +34,6 @@ const styles = StyleSheet.create({
   footer:       { position: 'absolute', bottom: 32, left: 48, right: 48, fontSize: 8, color: '#94a3b8', textAlign: 'center' },
 })
 
-function brl(value: number) {
-  return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-}
 
 export interface DiagnosticoPDFProps {
   municipioNome: string
@@ -77,11 +75,11 @@ export function DiagnosticoPDF({
           <View style={styles.summaryRow}>
             <View style={styles.summaryBox}>
               <Text style={styles.summaryLabel}>Total identificado</Text>
-              <Text style={styles.summaryValue}>{brl(valorTotalIdentificado)}</Text>
+              <Text style={styles.summaryValue}>{brl(valorTotalIdentificado, 2)}</Text>
             </View>
             <View style={styles.summaryBox}>
               <Text style={styles.summaryLabel}>Em risco de devolução</Text>
-              <Text style={styles.summaryRisk}>{brl(valorEmRisco)}</Text>
+              <Text style={styles.summaryRisk}>{brl(valorEmRisco, 2)}</Text>
             </View>
           </View>
         </View>
@@ -100,8 +98,8 @@ export function DiagnosticoPDF({
           {programasCriticos.map((p, i) => (
             <View key={i} style={styles.tableRow}>
               <Text style={styles.col40}>{p.programa} ({p.fundo})</Text>
-              <Text style={styles.col20}>{brl(p.valor_empenhado)}</Text>
-              <Text style={styles.col20}>{brl(p.valor_pago)}</Text>
+              <Text style={styles.col20}>{brl(p.valor_empenhado, 2)}</Text>
+              <Text style={styles.col20}>{brl(p.valor_pago, 2)}</Text>
               <Text style={{ ...styles.col20, ...styles.colRisk }}>
                 {p.percentual_execucao.toFixed(1)}%
               </Text>

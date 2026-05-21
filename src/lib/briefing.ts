@@ -1,9 +1,6 @@
 // src/lib/briefing.ts
 import type { EmendaParlamentar, MunicipioHabilitacao, MunicipioRecomendado } from '@/types'
-
-function brl(v: number) {
-  return `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
-}
+import { brl } from '@/lib/format'
 
 export interface RiscoBriefing {
   valorTotalEmendas: number
@@ -15,6 +12,8 @@ export interface RiscoBriefing {
 export function calcularRiscoBriefing(emendas: EmendaParlamentar[]): RiscoBriefing {
   const valorTotal = emendas.reduce((s, e) => s + e.valor_autorizado, 0)
   const valorExecutado = emendas.reduce((s, e) => s + e.valor_executado, 0)
+  // emendas_parlamentares tracks valor_autorizado/valor_executado (not valor_empenhado/valor_pago like
+  // transferencias_federais). The two data models are intentionally different — do not unify.
   const valorEmRisco = emendas.reduce((s, e) => s + Math.max(0, e.valor_autorizado - e.valor_executado), 0)
   const percentualExecutado = valorTotal > 0 ? (valorExecutado / valorTotal) * 100 : 0
 

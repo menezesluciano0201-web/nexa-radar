@@ -10,10 +10,7 @@ import { identificarProgramasCriticos, calcularRisco } from '@/lib/diagnostico'
 import { gerarDiagnostico } from '@/lib/claude'
 import { DiagnosticoPDF } from '@/lib/pdf/diagnostico-pdf'
 import type { TransferenciaFederal } from '@/types'
-
-function brl(value: number) {
-  return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-}
+import { brl } from '@/lib/format'
 
 export async function generateDiagnostico(
   id: string,
@@ -94,7 +91,7 @@ export async function generateDiagnostico(
     // 6. Ações recomendadas (top 5 programas)
     const acoes = programasCriticos.slice(0, 5).map(
       (p) =>
-        `Regularizar execução de ${p.programa}: ${brl(Math.max(0, p.valor_empenhado - p.valor_pago))} parado`
+        `Regularizar execução de ${p.programa}: ${brl(Math.max(0, p.valor_empenhado - p.valor_pago), 2)} parado`
     )
 
     // 7. Atualizar registro diagnosticos — armazena path (não URL pública, bucket é privado)

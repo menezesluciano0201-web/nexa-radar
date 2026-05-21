@@ -1,8 +1,11 @@
 // src/app/admin/briefing/[id]/page.tsx
 import { notFound } from 'next/navigation'
 import { requireAdminClient } from '@/lib/require-admin'
-import { marcarBriefingEntregue } from './actions'
+import { marcarBriefingEntregue, resetBriefingGerando } from './actions'
 import type { MunicipioRecomendado } from '@/types'
+import { brl } from '@/lib/format'
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function statusColor(status: string) {
   switch (status) {
@@ -14,10 +17,6 @@ function statusColor(status: string) {
   }
 }
 
-function brl(v: number) {
-  return `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
-}
-
 export default async function AdminBriefingPage({
   params,
   searchParams,
@@ -26,6 +25,7 @@ export default async function AdminBriefingPage({
   searchParams: Promise<{ error?: string }>
 }) {
   const { id } = await params
+  if (!UUID_RE.test(id)) notFound()
   const { error: actionError } = await searchParams
   const admin = await requireAdminClient()
 
@@ -144,8 +144,19 @@ export default async function AdminBriefingPage({
       )}
 
       {briefing.status === 'gerando' && (
-        <div className="rounded-md bg-yellow-900/30 border border-yellow-700 px-4 py-3 text-sm text-yellow-300">
-          Briefing em geração. Recarregue a página em alguns instantes.
+        <div className="rounded-md bg-yellow-900/30 border border-yellow-700 px-4 py-3 text-sm text-yellow-300 flex items-center justify-between gap-4">
+          <span>Briefing em geração. Recarregue a página em alguns instantes.</span>
+          {new Date().getTime() - new Date(briefing.criado_em).getTime() > 10 * 60 * 1000 && (
+            <form action={resetBriefingGerando}>
+              <input type="hidden" name="id" value={id} />
+              <button
+                type="submit"
+                className="rounded border border-yellow-600 px-3 py-1 text-xs text-yellow-300 hover:bg-yellow-800/30 transition-colors"
+              >
+                Forçar reset
+              </button>
+            </form>
+          )}
         </div>
       )}
       {briefing.status === 'erro' && (

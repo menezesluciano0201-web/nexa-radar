@@ -104,7 +104,7 @@ export interface Diagnostico {
   criado_em: string
 }
 
-export type StatusBriefing = 'gerando' | 'rascunho' | 'entregue' | 'erro'
+export type StatusBriefing = 'gerando' | 'rascunho' | 'entregue' | 'convertido' | 'erro'
 
 export interface MunicipioRecomendado {
   ibge: string

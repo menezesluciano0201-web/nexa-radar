@@ -1,22 +1,18 @@
 // src/app/admin/parlamentar/page.tsx
 import { requireAdminClient } from '@/lib/require-admin'
 import Link from 'next/link'
-
-function brl(v: number) {
-  return `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`
-}
+import { brl } from '@/lib/format'
 
 export default async function AdminParlamentarPage() {
   const admin = await requireAdminClient()
 
-  // Agrupar emendas por parlamentar (todos os anos); limit prevents unbounded fetch as data grows
-  const { data: emendas } = await admin
-    .from('emendas_parlamentares')
-    .select('parlamentar_id, parlamentar_nome, valor_autorizado, exercicio')
-    .order('parlamentar_nome')
-    .limit(20_000)
+  const { data: resumo } = await admin
+    .from('parlamentar_resumo')
+    .select('parlamentar_id, parlamentar_nome, total_autorizado, exercicios')
+    .order('total_autorizado', { ascending: false })
+    .limit(1000)
 
-  if (!emendas?.length) {
+  if (!resumo?.length) {
     return (
       <div>
         <h1 className="text-2xl font-bold text-slate-100 mb-4">Parlamentares</h1>
@@ -27,28 +23,12 @@ export default async function AdminParlamentarPage() {
     )
   }
 
-  // Agregar por parlamentar_id
-  const parlamentares = new Map<
-    string,
-    { nome: string; totalAutorizado: number; exercicios: Set<number> }
-  >()
-  for (const e of emendas) {
-    const existing = parlamentares.get(e.parlamentar_id)
-    if (existing) {
-      existing.totalAutorizado += e.valor_autorizado
-      existing.exercicios.add(e.exercicio)
-    } else {
-      parlamentares.set(e.parlamentar_id, {
-        nome: e.parlamentar_nome ?? e.parlamentar_id,
-        totalAutorizado: e.valor_autorizado,
-        exercicios: new Set([e.exercicio]),
-      })
-    }
-  }
-
-  const lista = Array.from(parlamentares.entries())
-    .map(([id, data]) => ({ id, ...data }))
-    .sort((a, b) => b.totalAutorizado - a.totalAutorizado)
+  const lista = resumo.map(r => ({
+    id: r.parlamentar_id,
+    nome: r.parlamentar_nome ?? r.parlamentar_id,
+    totalAutorizado: Number(r.total_autorizado),
+    exercicios: (r.exercicios as number[] | null) ?? [],
+  }))
 
   return (
     <div>
@@ -63,7 +43,7 @@ export default async function AdminParlamentarPage() {
             <div>
               <p className="text-sm font-medium text-slate-200">{p.nome}</p>
               <p className="text-xs text-slate-500 mt-0.5">
-                {[...p.exercicios].sort().join(', ')} · {p.exercicios.size} ano(s)
+                {p.exercicios.join(', ')} · {p.exercicios.length} ano(s)
               </p>
             </div>
             <div className="text-right">
