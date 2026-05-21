@@ -38,7 +38,8 @@ export async function generateDiagnostico(
       ])
 
     if (te) throw te
-    if (me || !municipio) throw me ?? new Error(`Município ${municipioIbge} não encontrado`)
+    if (me) throw me
+    if (!municipio) throw new Error(`Município ${municipioIbge} não encontrado`)
 
     if ((transferencias?.length ?? 0) >= 5000)
       console.warn('[generateDiagnostico] id=%s: transferencias hit limit 5000 — data may be incomplete', id)

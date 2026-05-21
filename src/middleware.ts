@@ -31,7 +31,8 @@ export async function middleware(request: NextRequest) {
   // (3) always return `supabaseResponse` (never a new NextResponse.next()) so the
   // Set-Cookie session-refresh headers are forwarded to the browser.
   // Redirects are safe because they don't carry cookies — only supabaseResponse does.
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError) console.error('[middleware] getUser failed:', authError.message)
 
   const { pathname } = request.nextUrl
 

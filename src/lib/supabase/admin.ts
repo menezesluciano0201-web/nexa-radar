@@ -1,6 +1,7 @@
 // src/lib/supabase/admin.ts
 // Admin client — uses service role key, bypasses RLS.
-// ONLY use in API Routes (route.ts). NEVER import in components or pages.
+// ONLY use in API Routes (route.ts) and requireAdminClient(). NEVER import in components or pages.
+import 'server-only'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 export function createAdminClient() {
