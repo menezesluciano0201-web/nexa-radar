@@ -1,6 +1,6 @@
 # Plan 2d — Gerador de Projetos Aprovávais (M3)
 **Data:** 2026-05-21
-**Status:** Aprovado
+**Status:** Aprovado (spec review round 2)
 **Autor:** Luciano Menezes + Claude Code (brainstorming colaborativo)
 
 ---
@@ -11,7 +11,7 @@ O Nexa Radar já entrega diagnóstico municipal (M2) e briefing parlamentar. O G
 
 **Escopo do Plan 2d:**
 - Geração admin-only (mesma lógica de diagnóstico e briefing)
-- 7 templates de programas públicos
+- 7 templates de programas públicos com padrões por órgão
 - Saída: PDF + Word (.docx)
 - Entrega ao cliente: manual (download pelo admin, envio por e-mail/WhatsApp)
 - Sem portal de cliente nesta fase
@@ -25,7 +25,7 @@ O Nexa Radar já entrega diagnóstico municipal (M2) e briefing parlamentar. O G
 ```sql
 CREATE TABLE projetos (
   id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  diagnostico_id       uuid REFERENCES diagnosticos(id),   -- nullable: vínculo com diagnóstico de origem
+  diagnostico_id       uuid REFERENCES diagnosticos(id),   -- nullable no DB; obrigatório na API v1
   municipio_ibge       text NOT NULL,
   gerado_por           uuid REFERENCES auth.users(id),
   template             text NOT NULL CHECK (template IN (
@@ -45,7 +45,7 @@ CREATE TABLE projetos (
   -- Saída gerada
   status               text NOT NULL DEFAULT 'gerando'
                          CHECK (status IN ('gerando','rascunho','erro')),
-  secoes_ia            jsonb,   -- JSON estruturado com todas as seções geradas pelo Claude
+  secoes_ia            jsonb,   -- SecoesProjeto serializado
   pdf_url              text,    -- path no Storage bucket 'projetos'
   docx_url             text,    -- path no Storage bucket 'projetos'
   criado_em            timestamptz NOT NULL DEFAULT now()
@@ -59,12 +59,33 @@ CREATE POLICY "projetos_admin_all" ON projetos
 ```
 
 **Índices:**
-- `(municipio_ibge, criado_em DESC)` — lista por município
-- `(status)` WHERE status = 'gerando' — monitoramento de stuck records
+```sql
+CREATE INDEX ON projetos (municipio_ibge, criado_em DESC);
+CREATE INDEX ON projetos (status) WHERE status = 'gerando';
+
+-- Dedup guard: impede geração simultânea do mesmo par (município, template)
+-- Espelha diagnosticos_municipio_gerando_unique (migration 016) e briefings_parlamentar_gerando_unique (014)
+CREATE UNIQUE INDEX projetos_municipio_template_gerando_unique
+  ON projetos (municipio_ibge, template) WHERE status = 'gerando';
+```
+
+O POST `/api/projeto` deve tratar erro PostgreSQL 23505 (unique_violation) retornando 409 com mensagem clara.
+
+### Realtime
+
+```sql
+-- Habilitar Realtime na tabela (necessário para polling via Supabase Realtime)
+ALTER PUBLICATION supabase_realtime ADD TABLE projetos;
+```
 
 ### Storage
 
-Novo bucket `projetos` (separado de `relatorios` que serve diagnósticos e briefings). Admin-only via service role. Política RLS:
+Bucket `projetos` — **criado via Supabase MCP** antes de aplicar a migration (não é criável via SQL DDL):
+```
+supabase.create_bucket('projetos', { public: false })
+```
+
+A migration apenas adiciona a política RLS no bucket já existente:
 
 ```sql
 CREATE POLICY "projetos_storage_admin"
@@ -85,11 +106,13 @@ Cada template é um arquivo TypeScript em `src/lib/templates/` que exporta um `T
 |---|---|---|---|
 | `scfv` | MDS / SUAS | FNAS | Transferegov |
 | `tea` | MDS / SUAS | FNAS | Transferegov |
-| `caps` | MS / SUS | FNS | Transferegov / SCTIE |
+| `caps` | MS / SUS | FNS | Transferegov |
 | `idoso` | MDS / SUAS | FNAS | Transferegov |
-| `esporte` | ME | Orçamento ME | Transferegov / SNELIS |
-| `saude_basica` | MS / SUS | FNS | REDE / Transferegov |
+| `esporte` | ME | Orçamento ME | Transferegov |
+| `saude_basica` | MS / SUS | FNS | FNS fundo-a-fundo / SCNES |
 | `educacao` | MEC / FNDE | FNDE | SIGPC / SIMEC |
+
+> **Nota:** `saude_basica` (PAB, ESF, NASF) opera via repasse fundo-a-fundo do FNS, não via Transferegov. O SCNES é usado para cadastro de equipes de saúde.
 
 ### Interface `TemplateConfig`
 
@@ -106,13 +129,13 @@ interface SecaoConfig {
   id: string          // ex: 'plano_de_trabalho'
   titulo: string      // ex: 'Plano de Trabalho'
   obrigatoria: boolean
-  instrucoes: string  // instrução para o Claude nessa seção
+  instrucoes: string  // instrução específica ao Claude para ESTA seção (inline no prompt)
 }
 
 interface RubricaOrcamento {
   codigo: string      // ex: '3.3.90.30'
   descricao: string   // ex: 'Material de Consumo'
-  percentualMaximo?: number
+  percentualMaximo?: number   // ex: 0.30 = 30% do valor total
 }
 
 interface TemplateConfig {
@@ -120,24 +143,30 @@ interface TemplateConfig {
   orgao: string
   fundo: string
   camposEspecificos: CampoForm[]     // renderizados dinamicamente no formulário
-  secoes: SecaoConfig[]               // ordem e estrutura do documento
+  secoes: SecaoConfig[]               // ordem das seções no documento
   indicadores: string[]               // indicadores SUAS/SUS aceitos pelo órgão
-  rubricas: RubricaOrcamento[]        // rubricas orçamentárias aceitas
+  rubricas: RubricaOrcamento[]        // rubricas orçamentárias aceitas pelo órgão
   declaracoesObrigatorias: string[]   // texto literal das declarações exigidas
-  promptInstrucoes: string            // instruções ao Claude sobre padrões do órgão
-  disclaimer: string                  // disclaimer do órgão (diferente por programa)
+  promptInstrucoes: string            // contexto geral do órgão para o Claude (sistema/contexto, não por seção)
+  disclaimer: string                  // disclaimer obrigatório do órgão
 }
 ```
 
-### Campos dinâmicos por template (exemplos)
+**Relação entre `promptInstrucoes` e `SecaoConfig.instrucoes`:**
+- `promptInstrucoes` → bloco de contexto geral no início do prompt ("Este projeto segue as normas do FNAS/SUAS. O plano de trabalho deve usar a linguagem SUAS...")
+- `SecaoConfig.instrucoes` → instrução inline antes de cada seção ("Para esta seção, liste metas físicas mensais com indicadores SUAS compatíveis...")
+
+`gerarPromptProjeto()` monta: `[promptInstrucoes] + [dados do município e diagnóstico] + [para cada secao: instrucoes + pedido de geração]`.
+
+### Campos dinâmicos por template
 
 | Template | Campos extras |
 |---|---|
 | `scfv` | Faixas etárias (checkbox: criança / adolescente / idoso) |
-| `tea` | Tipo de atendimento (centro-dia / domiciliar), exige laudo (sim/não) |
+| `tea` | Tipo de atendimento (centro-dia / domiciliar), exige laudo diagnóstico (sim/não) |
 | `caps` | Modalidade (CAPS I / II / III / AD / Infanto-juvenil) |
 | `idoso` | Modalidade (Centro-Dia / ILPI / Serviço Domiciliar) |
-| `esporte` | Modalidades esportivas, faixa etária alvo, equipamentos |
+| `esporte` | Modalidades esportivas, faixa etária alvo, equipamentos solicitados |
 | `saude_basica` | Tipo de equipe (ESF / NASF / UBS), número de equipes |
 | `educacao` | Nível (fundamental / médio), programa FNDE (PNAE / PDDE / Proinfância) |
 
@@ -150,62 +179,113 @@ interface TemplateConfig {
 **Input (body JSON):**
 ```ts
 {
-  diagnostico_id: string         // UUID do diagnóstico de origem — obrigatório na v1 (nullable no DB reserva standalone futuro)
+  diagnostico_id: string         // UUID — obrigatório na v1; nullable no DB reserva standalone futuro
   template: TemplateName
   objeto: string
   justificativa: string
   num_beneficiarios: number
   valor_solicitado: number
   valor_contrapartida: number
-  prazo_meses: number
+  prazo_meses: number            // 1–60
   oscip_executora?: string
   capacidade_instalada: string
-  campos_extras: Record<string, unknown>  // campos dinâmicos do template
+  campos_extras: Record<string, unknown>  // validação estrutural delegada a validarInputsProjeto()
 }
 ```
 
-**Comportamento:** Valida UUID + inputs → INSERT `status='gerando'` → fire-and-forget `generateProjeto()` → retorna `202 { id }`.
+**`municipio_ibge` é derivado do diagnóstico** — não aceito no body. O POST busca o diagnóstico pelo `diagnostico_id` para obter e persistir o `municipio_ibge`. Isso evita divergência entre o body e o diagnóstico de origem.
+
+**Comportamento:**
+1. Valida UUID (`diagnostico_id`) e inputs comuns
+2. Busca diagnóstico para extrair `municipio_ibge`
+3. `validarInputsProjeto()` valida `campos_extras` contra o `TemplateConfig` do template escolhido
+4. INSERT `status='gerando'` — trata erro 23505 com 409
+5. Fire-and-forget `generateProjeto(id, diagnosticoId, template, inputs)`
+6. Retorna `202 { id }`
 
 ### `GET /api/projeto/[id]`
 
-Valida UUID → retorna `{ status, pdf_url, docx_url }` para polling.
+Valida UUID → retorna `{ status, pdf_url, docx_url }`.
 
 ---
 
 ## 5. Pipeline de Geração
 
+### `src/lib/claude.ts` — função `gerarProjeto`
+
+Adicionar ao `claude.ts` existente:
+
+```ts
+export async function gerarProjeto(prompt: string): Promise<SecoesProjeto> {
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 8192,   // projetos são documentos longos — 4096 do padrão é insuficiente
+    messages: [{ role: 'user', content: prompt }],
+  })
+  const text = message.content[0].type === 'text' ? message.content[0].text : ''
+  // Extrair JSON do bloco ```json ... ``` se necessário
+  const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) ?? text.match(/(\{[\s\S]*\})/)
+  if (!jsonMatch) throw new Error('Claude não retornou JSON válido para projeto')
+  return JSON.parse(jsonMatch[1]) as SecoesProjeto
+}
+```
+
+O `timeout` do client já é 65s (configurado no wrapper existente).
+
 ### `src/lib/generateProjeto.tsx` (server-only)
 
 ```
-1. Buscar diagnóstico + município em paralelo (Promise.all)
-2. Carregar TemplateConfig do registry
-3. Montar prompt com: instruções do órgão + inputs do admin + dados do diagnóstico
-   └── Claude retorna SecoesProjeto (JSON com todas as seções)
-4. Gerar PDF via @react-pdf/renderer (ProjetoPDF)
-5. Gerar Word via pacote `docx` (ProjetoDocx)
-6. Upload PDF → Storage: projetos/projeto-{id}.pdf
-7. Upload Word → Storage: projetos/projeto-{id}.docx
-8. UPDATE projetos SET status='rascunho', secoes_ia, pdf_url, docx_url
+1. Buscar diagnóstico + dados do município em paralelo (Promise.all)
+2. Carregar TemplateConfig via registry
+3. Montar prompt: gerarPromptProjeto(config, inputs, municipioNome, programasCriticos)
+4. gerarProjeto(prompt) → SecoesProjeto via Claude (max_tokens: 8192)
+5. Gerar PDF via @react-pdf/renderer (ProjetoPDF)
+6. Gerar Word via `docx` → Packer.toBuffer() → Buffer
+7. Upload PDF → Storage: projetos/projeto-{id}.pdf
+8. Upload Word → Storage: projetos/projeto-{id}.docx
+9. UPDATE projetos SET status='rascunho', secoes_ia, pdf_url, docx_url
    └── catch: UPDATE status='erro' WHERE status='gerando'
 ```
 
-### Saída estruturada do Claude
+### Saída estruturada do Claude — `SecoesProjeto`
 
 ```ts
 interface SecoesProjeto {
-  objeto: string
-  justificativa: string
+  // Seções estruturadas
   metas_fisicas: Array<{ trimestre: number; meta: string; quantidade: number }>
   indicadores: Array<{ nome: string; formula: string; meta: string }>
   cronograma: Array<{ etapa: string; mes_inicio: number; mes_fim: number }>
   orcamento: Array<{ rubrica: string; descricao: string; valor: number }>
   declaracoes: string[]
+
+  // Seções narrativas — keyed por SecaoConfig.id
+  // Contém o texto gerado para cada seção definida em TemplateConfig.secoes
+  // Ex: { 'objeto': '...', 'justificativa': '...', 'plano_de_trabalho': '...' }
+  secoes_texto: Record<string, string>
 }
 ```
 
+O PDF e o Word iteram `TemplateConfig.secoes` em ordem: para cada seção, buscam o texto em `secoes_texto[secao.id]`. Seções estruturadas (metas, indicadores, cronograma, orçamento) têm seus próprios campos tipados e são renderizadas com formatação tabular.
+
 ### Word generation — pacote `docx`
 
-Instalar: `npm install docx` (não está no package.json atual). Gera `.docx` nativo em Node.js sem LibreOffice. Estrutura do documento segue `TemplateConfig.secoes`: capa → identificação do proponente → seções em ordem → disclaimer obrigatório do órgão.
+```ts
+// src/lib/docx/projeto-docx.ts
+import 'server-only'
+import { Document, Paragraph, Table, Packer, ... } from 'docx'
+
+export async function gerarProjetoDocx(
+  config: TemplateConfig,
+  secoes: SecoesProjeto,
+  municipioNome: string,
+  inputs: ProjetoInputs
+): Promise<Buffer> {
+  const doc = new Document({ sections: [...] })
+  return Packer.toBuffer(doc)   // não usar toStream() — Buffer é mais simples para upload
+}
+```
+
+Estrutura do documento: capa → identificação do proponente → seções em `TemplateConfig.secoes` order → disclaimer do órgão.
 
 ---
 
@@ -214,47 +294,46 @@ Instalar: `npm install docx` (não está no package.json atual). Gera `.docx` na
 ### `/admin/projeto/novo`
 
 **Bloco 1 — Contexto (pré-preenchido ao selecionar diagnóstico)**
-- Select: diagnóstico de origem → exibe município, programas críticos, valor em risco
-- Select: template → determina campos extras e label do órgão
+- Select: diagnóstico de origem (lista diagnósticos com status `rascunho` ou `entregue`) → ao selecionar, exibe município, programas críticos, valor em risco
+- Select: template → determina campos extras, label do órgão e fundo
 
 **Bloco 2 — Dados comuns**
-- Objeto, justificativa, nº beneficiários, valor solicitado, contrapartida, prazo, OSCIP, capacidade instalada
+- Objeto, justificativa, nº beneficiários, valor solicitado (R$), contrapartida (R$), prazo (meses), OSCIP executora (opcional), capacidade instalada
 
-**Bloco 3 — Campos dinâmicos (renderizados pelo TemplateConfig.camposEspecificos)**
+**Bloco 3 — Campos dinâmicos** (renderizados dinamicamente por `TemplateConfig.camposEspecificos` ao mudar o template)
 
-Submit → POST /api/projeto → redirect para `/admin/projeto/[id]` com Realtime polling (padrão existente).
+Submit → POST `/api/projeto` → redirect para `/admin/projeto/[id]` com Realtime subscription em `projetos` (padrão do `BriefingForm` existente — `projetos` estará na publicação Realtime por conta da migration Task 1).
 
 ### `/admin/projeto/[id]`
 
 - Status badge + timestamp
-- Download PDF (signed URL 1h)
-- Download Word (signed URL 1h)
-- Resumo dos inputs (template, município, valor, beneficiários)
-- Seções geradas exibidas em accordions colapsáveis (revisão sem download)
-- Botão "Forçar reset" se gerando há mais de 10 min
+- Botão **↓ Baixar PDF** (signed URL 1h)
+- Botão **↓ Baixar Word** (signed URL 1h)
+- Resumo: template · órgão · município · valor solicitado · nº beneficiários
+- Seções geradas exibidas em acordeões colapsáveis (admin revisa sem baixar)
+- Botão "Forçar reset" se status = 'gerando' há mais de 10 min (padrão existente)
 
 ### `/admin/projeto`
 
-Lista paginada: município · template · valor solicitado · status · data · link para detalhe.
+Lista: município (nome via join `municipios_habilitacao`) · template · valor solicitado · status · data. Ordenada por `criado_em DESC`, limite 50 por página.
 
 ### Sidebar admin
 
-Adicionar item "Projetos" (ícone `FileCheck`) entre "Parlamentares" e demais itens existentes.
+Adicionar item "Projetos" (ícone `FileCheck`) em `src/app/admin/layout.tsx`.
 
 ---
 
 ## 7. Lógica de Negócio (TDD)
 
-### `src/lib/projeto.ts`
+### Tipos — `src/types/index.ts`
 
-Tipos de suporte (adicionados a `src/types/index.ts`):
 ```ts
 type TemplateName = 'scfv' | 'tea' | 'caps' | 'idoso' | 'esporte' | 'saude_basica' | 'educacao'
 type StatusProjeto = 'gerando' | 'rascunho' | 'erro'
 
 interface ProjetoInputs {
   diagnostico_id: string
-  municipio_ibge: string
+  municipio_ibge: string          // derivado do diagnóstico pelo POST route
   template: TemplateName
   objeto: string
   justificativa: string
@@ -266,37 +345,88 @@ interface ProjetoInputs {
   capacidade_instalada: string
   campos_extras: Record<string, unknown>
 }
+
+interface Projeto {
+  id: string
+  diagnostico_id: string | null
+  municipio_ibge: string
+  gerado_por: string
+  template: TemplateName
+  objeto: string | null
+  justificativa: string | null
+  num_beneficiarios: number | null
+  valor_solicitado: number | null
+  valor_contrapartida: number | null
+  prazo_meses: number | null
+  oscip_executora: string | null
+  capacidade_instalada: string | null
+  campos_extras: Record<string, unknown> | null
+  status: StatusProjeto
+  secoes_ia: SecoesProjeto | null
+  pdf_url: string | null
+  docx_url: string | null
+  criado_em: string
+}
+
+interface ValidationResult {
+  valid: boolean
+  errors: string[]
+}
+
+interface ItemOrcamento {
+  rubrica: string
+  descricao: string
+  valor: number
+}
 ```
 
-Funções exportadas:
+### `src/lib/projeto.ts` — funções exportadas
+
 ```ts
+// Valida campos comuns + campos_extras obrigatórios do template
 validarInputsProjeto(inputs: ProjetoInputs, config: TemplateConfig): ValidationResult
+
+// Distribui valor_solicitado entre as rubricas do template.
+// Algoritmo: divisão proporcional por número de rubricas, respeitando percentualMaximo.
+// Se uma rubrica teria valor > percentualMaximo * total, o excedente é redistribuído nas demais.
+// Soma sempre igual a valor_solicitado.
 calcularOrcamentoBase(config: TemplateConfig, valor: number, prazo: number): ItemOrcamento[]
-gerarPromptProjeto(config: TemplateConfig, inputs: ProjetoInputs, municipioNome: string, programasCriticos: ProgramaCritico[]): string
+
+// Monta o prompt completo para gerarProjeto() em claude.ts.
+// Estrutura: promptInstrucoes + dados do município/diagnóstico + por seção: instrucoes + pedido de geração
+// Retorna string que será passada diretamente para gerarProjeto(prompt)
+gerarPromptProjeto(
+  config: TemplateConfig,
+  inputs: ProjetoInputs,
+  municipioNome: string,
+  programasCriticos: ProgramaCritico[]
+): string
 ```
 
 ### `src/lib/__tests__/projeto.test.ts`
 
-- `validarInputsProjeto`: campos obrigatórios ausentes, valor ≤ 0, prazo fora de 1–60 meses
-- `calcularOrcamentoBase`: soma das rubricas = valor solicitado, respeita percentuais máximos
-- `gerarPromptProjeto`: prompt contém nome do município, nome do órgão, indicadores do template
+- `validarInputsProjeto`: campos obrigatórios ausentes, `valor_solicitado ≤ 0`, `prazo_meses` fora de 1–60, campo obrigatório em `campos_extras` ausente
+- `calcularOrcamentoBase`: soma das rubricas = `valor_solicitado` (±1 centavo de arredondamento), rubrica não ultrapassa `percentualMaximo`
+- `gerarPromptProjeto`: prompt contém nome do município, nome do órgão (`config.orgao`), pelo menos um indicador do template, e `instrucoes` da primeira seção
+
+*Nota: Task 3 pode iniciar com um `TemplateConfig` mock mínimo — os templates completos da Task 2 não são necessários para os testes de lógica de negócio.*
 
 ### `src/lib/__tests__/generate-projeto.test.ts`
 
-- Happy path: status atualizado para 'rascunho', pdf_url e docx_url preenchidos
-- Erro Claude: status → 'erro'
-- Erro upload: status → 'erro'
+- Happy path: `updatePayloads` contém `{ status: 'rascunho', pdf_url: 'projeto-test-id.pdf', docx_url: 'projeto-test-id.docx' }`
+- Erro Claude: `updatePayloads` contém `{ status: 'erro' }`
+- Erro upload PDF: `updatePayloads` contém `{ status: 'erro' }`
 - Resolve sem throw em qualquer cenário de erro
 
 ---
 
 ## 8. Regras de Negócio
 
-- Todo projeto gerado inclui disclaimer: *"Este documento foi gerado com auxílio de inteligência artificial. Revisar com especialista antes de submeter ao órgão."* (conforme CLAUDE.md)
-- O disclaimer varia por órgão (texto no `TemplateConfig.disclaimer`)
-- `gerado_por` é sempre preenchido — rastreabilidade de quem solicitou
-- Campos `campos_extras` são persistidos em JSONB para permitir regeneração futura sem perda de inputs
-- Nenhum dado pessoal de beneficiário individual é armazenado — apenas agregados (nº total)
+- Todo projeto inclui disclaimer por órgão (`TemplateConfig.disclaimer`) — conforme exigência do CLAUDE.md
+- `gerado_por` sempre preenchido com o UUID do admin autenticado (rastreabilidade)
+- `campos_extras` persistido em JSONB para permitir regeneração futura sem perda de inputs
+- Nenhum dado pessoal de beneficiário individual é armazenado — apenas totais agregados
+- Validação de `campos_extras` é responsabilidade de `validarInputsProjeto()` — o POST route delega para ela
 
 ---
 
@@ -304,15 +434,16 @@ gerarPromptProjeto(config: TemplateConfig, inputs: ProjetoInputs, municipioNome:
 
 | # | Task | Depende de |
 |---|---|---|
-| 1 | Migration: tabela `projetos` + RLS + bucket Storage `projetos` | — |
-| 2 | `src/lib/templates/` — 7 TemplateConfig + index.ts | — |
-| 3 | `src/lib/projeto.ts` — lógica pura + testes (TDD) | 2 |
-| 4 | `src/lib/pdf/projeto-pdf.tsx` — template PDF por órgão | 2 |
-| 5 | `src/lib/docx/projeto-docx.ts` — geração Word (`docx` package) | 2 |
-| 6 | `src/lib/generateProjeto.tsx` — pipeline async | 3, 4, 5 |
-| 7 | API: `POST /api/projeto` + `GET /api/projeto/[id]` | 1, 6 |
-| 8 | `/admin/projeto/novo` — formulário dinâmico | 7 |
-| 9 | `/admin/projeto/[id]` — detalhe + downloads + polling | 7 |
-| 10 | `/admin/projeto` — lista | 1 |
-| 11 | Sidebar admin: link "Projetos" | 10 |
-| 12 | Testes `generate-projeto.test.ts` | 6 |
+| 1 | Criar bucket `projetos` via Supabase MCP + migration: tabela `projetos`, índices, dedup index, RLS, storage policy, Realtime | — |
+| 2 | `src/lib/templates/` — 7 TemplateConfig + index.ts registry | — |
+| 3 | `src/lib/projeto.ts` — lógica pura + `src/lib/__tests__/projeto.test.ts` (TDD, mock TemplateConfig) | 2 |
+| 4 | `gerarProjeto()` em `src/lib/claude.ts` (max_tokens: 8192, JSON parse com fallback) | — |
+| 5 | `src/lib/pdf/projeto-pdf.tsx` — template PDF iterando `TemplateConfig.secoes` | 2 |
+| 6 | `src/lib/docx/projeto-docx.ts` (server-only, `Packer.toBuffer()`) | 2 |
+| 7 | `src/lib/generateProjeto.tsx` — pipeline async server-only | 3, 4, 5, 6 |
+| 8 | API: `POST /api/projeto` (com 409 em 23505) + `GET /api/projeto/[id]` | 1, 7 |
+| 9 | `/admin/projeto/novo` — formulário dinâmico com Realtime | 8 |
+| 10 | `/admin/projeto/[id]` — detalhe + downloads + Forçar reset | 8 |
+| 11 | `/admin/projeto` — lista com join municipios_habilitacao | 1 |
+| 12 | Sidebar admin: link "Projetos" em `src/app/admin/layout.tsx` | 11 |
+| 13 | `src/lib/__tests__/generate-projeto.test.ts` | 7 |
