@@ -75,7 +75,7 @@ export default async function AdminDiagnosticoPage({
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-100">
-            {municipio?.nome ?? diagnostico.municipio_ibge} — {municipio?.uf}
+            {municipio?.nome ?? diagnostico.municipio_ibge}{municipio?.uf ? ` — ${municipio.uf}` : ''}
           </h1>
           <p className="text-slate-400 text-sm mt-1">
             Status:{' '}

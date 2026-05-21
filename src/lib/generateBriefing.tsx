@@ -42,6 +42,8 @@ export async function generateBriefing(
           .in('ibge', ibgeCodes)
           .limit(500)
       : { data: [], error: null }
+    if ((municipios?.length ?? 0) >= 500)
+      console.warn('[generateBriefing] id=%s: municipios hit limit 500 — some IBGE codes may be missing from scoring', id)
 
     if (me) throw me
 

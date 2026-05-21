@@ -45,9 +45,12 @@ export async function generateDiagnostico(
       console.warn('[generateDiagnostico] id=%s: transferencias hit limit 5000 — data may be incomplete', id)
 
     // 2. Computar programas críticos e risco
-    const programasCriticos = identificarProgramasCriticos(
+    const allCriticos = identificarProgramasCriticos(
       (transferencias ?? []) as TransferenciaFederal[]
     )
+    if ((transferencias?.length ?? 0) > 0 && allCriticos.length === 0)
+      console.warn('[generateDiagnostico] id=%s: nenhum programa crítico identificado', id)
+    const programasCriticos = allCriticos
     const { valorTotalIdentificado, valorEmRisco } = calcularRisco(programasCriticos)
 
     // 3. Gerar texto com Claude (15-30s)

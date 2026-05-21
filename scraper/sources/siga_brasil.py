@@ -37,7 +37,8 @@ LIMIT 10000
 
 def coletar_emendas_individuais(ano: int) -> list[dict]:
     """Retorna rows prontas para inserção em emendas_parlamentares."""
-    assert 2000 <= ano <= 2100, f"ano fora do intervalo esperado: {ano}"
+    if not (2000 <= ano <= 2100):
+        raise ValueError(f"ano fora do intervalo esperado: {ano}")
     ibge_values = " ".join(f'"{ibge}"' for ibge in IBGE_ATIVOS)
     sparql = SPARQLWrapper(SPARQL_ENDPOINT)
     sparql.addCustomHttpHeader("User-Agent", USER_AGENT)

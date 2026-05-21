@@ -27,7 +27,7 @@ export default async function PortalBriefingPage() {
     )
   }
 
-  // RLS (migration 002) scopes by parlamentar_id; explicit filter is belt-and-suspenders
+  // RLS (migration 019) scopes by parlamentar_id + status='entregue'; explicit filter is belt-and-suspenders
   const { data: briefings } = await supabase
     .from('briefings')
     .select('id, status, valor_total_emendas, valor_em_risco, criado_em')
