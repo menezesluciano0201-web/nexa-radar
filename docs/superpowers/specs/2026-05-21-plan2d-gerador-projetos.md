@@ -121,8 +121,8 @@ interface CampoForm {
   nome: string
   label: string
   tipo: 'text' | 'number' | 'select' | 'textarea' | 'checkbox' | 'multi-select'
-  // 'checkbox': boolean sim/não (ex: TEA — exige laudo)
-  // 'multi-select': múltiplas opções (ex: SCFV — faixas etárias)
+  // 'checkbox': boolean sim/não (ex: TEA — exige laudo) → serializa como boolean em campos_extras
+  // 'multi-select': múltiplas opções (ex: SCFV — faixas etárias) → serializa como string[] em campos_extras
   opcoes?: string[]   // para tipo 'select' e 'multi-select'
   obrigatorio: boolean
 }
@@ -164,7 +164,7 @@ interface TemplateConfig {
 
 | Template | Campos extras |
 |---|---|
-| `scfv` | Faixas etárias (checkbox: criança / adolescente / idoso) |
+| `scfv` | Faixas etárias (multi-select: criança / adolescente / idoso) |
 | `tea` | Tipo de atendimento (centro-dia / domiciliar), exige laudo diagnóstico (sim/não) |
 | `caps` | Modalidade (CAPS I / II / III / AD / Infanto-juvenil) |
 | `idoso` | Modalidade (Centro-Dia / ILPI / Serviço Domiciliar) |
@@ -244,6 +244,7 @@ Pipeline roda fire-and-forget em Node.js persistente (EasyPanel always-on). Dura
 
 ```
 1. Buscar diagnóstico + dados do município em paralelo (Promise.all)
+   └── municipioNome vem de municipios_habilitacao.nome (join por diagnostico.municipio_ibge)
 2. Carregar TemplateConfig via registry
 3. Montar prompt: gerarPromptProjeto(config, inputs, municipioNome, programasCriticos)
 4. gerarProjeto(prompt) → SecoesProjeto via Claude (max_tokens: 8192)
@@ -310,7 +311,11 @@ Estrutura do documento: capa → identificação do proponente → seções em `
 
 **Bloco 3 — Campos dinâmicos** (renderizados dinamicamente por `TemplateConfig.camposEspecificos` ao mudar o template)
 
-Submit → `ProjetoForm` (client component, padrão idêntico ao `BriefingForm.tsx`) chama POST `/api/projeto`, aguarda o `id` retornado, assina `postgres_changes` em `projetos WHERE id = {id}`, e navega para `/admin/projeto/${id}` **somente após receber status `rascunho` ou `erro` via Realtime**. O redirect não acontece imediatamente após o 202 — a subscription fica ativa na mesma página enquanto o pipeline roda.
+Submit → `ProjetoForm` (client component, baseado em `BriefingForm.tsx`) chama POST `/api/projeto`, obtém o `id`, assina `postgres_changes` em `projetos WHERE id = {id}`, e permanece na página exibindo spinner até resolver:
+- `status === 'rascunho'` → renderiza botão "Ver Projeto →" (link para `/admin/projeto/${id}`) — sem redirect automático (alinhado com BriefingForm)
+- `status === 'erro'` → renderiza mensagem de erro na mesma página — sem redirect (redirect para página de erro seria confuso)
+
+O redirect automático não ocorre — o admin decide quando navegar.
 
 ### `/admin/projeto/[id]`
 
