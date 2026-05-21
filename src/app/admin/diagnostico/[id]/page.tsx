@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { requireAdminClient } from '@/lib/require-admin'
 import { marcarDiagnosticoEntregue, resetDiagnosticoGerando } from './actions'
 import type { ProgramaCritico } from '@/types'
+import { UUID_RE } from '@/lib/format'
 
 function statusColor(status: string) {
   switch (status) {
@@ -19,8 +20,6 @@ function statusColor(status: string) {
       return 'text-slate-400'
   }
 }
-
-import { UUID_RE } from '@/lib/format'
 
 export default async function AdminDiagnosticoPage({
   params,
