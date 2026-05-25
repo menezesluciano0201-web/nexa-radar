@@ -1,6 +1,7 @@
 // src/components/portal/PortalHeader.tsx
 import Image from 'next/image'
 import type { MunicipioBranding } from '@/types'
+import { DEFAULT_COR_PRIMARIA } from '@/lib/portal'
 
 interface Props {
   nome: string
@@ -9,7 +10,7 @@ interface Props {
 }
 
 export function PortalHeader({ nome, uf, branding }: Props) {
-  const cor = branding?.cor_primaria ?? '#0284c7'
+  const cor = branding?.cor_primaria ?? DEFAULT_COR_PRIMARIA
   return (
     <header className="px-4 py-6 text-white" style={{ backgroundColor: cor }}>
       <div className="max-w-5xl mx-auto flex items-center gap-4">

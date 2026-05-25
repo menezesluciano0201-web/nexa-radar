@@ -4,10 +4,11 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { requireAdminClient } from '@/lib/require-admin'
+import { IBGE_RE } from '@/lib/format'
 
 export async function habilitarMunicipio(formData: FormData) {
   const ibge = (formData.get('ibge') as string | null)?.trim()
-  if (!ibge || !/^\d{7}$/.test(ibge)) redirect('/admin/portal?error=ibge_invalido')
+  if (!ibge || !IBGE_RE.test(ibge)) redirect('/admin/portal?error=ibge_invalido')
 
   const admin = await requireAdminClient()
 

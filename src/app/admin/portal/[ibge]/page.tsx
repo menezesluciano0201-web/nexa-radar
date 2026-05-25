@@ -2,12 +2,11 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { requireAdminClient } from '@/lib/require-admin'
+import { IBGE_RE } from '@/lib/format'
 import { IdentidadeForm } from './IdentidadeForm'
 import { KpisForm } from './KpisForm'
 import { togglePublicacao } from './actions'
 import type { MunicipioBranding, KpiPortal, PublicacaoPortal } from '@/types'
-
-const IBGE_RE = /^\d{7}$/
 
 type Aba = 'identidade' | 'kpis' | 'publicacoes'
 

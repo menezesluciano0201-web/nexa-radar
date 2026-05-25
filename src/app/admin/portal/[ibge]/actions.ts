@@ -3,10 +3,9 @@
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { requireAdminClient } from '@/lib/require-admin'
-import { createClient } from '@/lib/supabase/server'
-
-const IBGE_RE = /^\d{7}$/
+import { requireAdminClient, requireAdminClientWithUser } from '@/lib/require-admin'
+import { IBGE_RE } from '@/lib/format'
+import { DEFAULT_COR_PRIMARIA } from '@/lib/portal'
 
 async function getMunicipioSlug(ibge: string): Promise<{ uf: string; slug: string } | null> {
   const admin = await requireAdminClient()
@@ -27,13 +26,9 @@ export async function salvarBranding(formData: FormData) {
   const ibge = formData.get('ibge') as string
   if (!IBGE_RE.test(ibge)) redirect('/admin/portal')
 
-  // O admin client é service-role (sem auth context). Pegar user via server client.
-  const server = await createClient()
-  const { data: { user } } = await server.auth.getUser()
+  const { admin, user } = await requireAdminClientWithUser()
 
-  const admin = await requireAdminClient()
-
-  const cor = ((formData.get('cor_primaria') as string) ?? '').trim() || '#0284c7'
+  const cor = ((formData.get('cor_primaria') as string) ?? '').trim() || DEFAULT_COR_PRIMARIA
   const prefeito_nome = ((formData.get('prefeito_nome') as string) ?? '').trim() || null
   const prefeito_gestao = ((formData.get('prefeito_gestao') as string) ?? '').trim() || null
 
@@ -45,7 +40,7 @@ export async function salvarBranding(formData: FormData) {
       prefeito_nome,
       prefeito_gestao,
       atualizado_em: new Date().toISOString(),
-      atualizado_por: user?.id ?? null,
+      atualizado_por: user.id,
     }, { onConflict: 'municipio_ibge' })
 
   revalidatePath(`/admin/portal/${ibge}`)

@@ -1,6 +1,10 @@
 // src/lib/portal.ts
 import type { KpiPortal } from '@/types'
 
+// Cor primária default do portal quando o município não tem branding (nexa-600).
+// Single source of truth para evitar drift entre admin form, DB default e renders.
+export const DEFAULT_COR_PRIMARIA = '#0284c7'
+
 export function ordenarKpis(kpis: KpiPortal[]): (KpiPortal | null)[] {
   const slots: (KpiPortal | null)[] = [null, null, null, null]
   for (const k of kpis) {

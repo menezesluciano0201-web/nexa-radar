@@ -55,8 +55,8 @@ export const getPortalData = cache(async (uf: string, slug: string): Promise<Por
 
   return {
     municipio: municipio as MunicipioInfo,
-    branding: (brandingRes.data as MunicipioBranding | null) ?? null,
-    kpis: (kpisRes.data as KpiPortal[] | null) ?? [],
-    publicacoes: (pubsRes.data as PublicacaoPortal[] | null) ?? [],
+    branding: brandingRes.data as MunicipioBranding | null,
+    kpis: (kpisRes.data ?? []) as KpiPortal[],
+    publicacoes: (pubsRes.data ?? []) as PublicacaoPortal[],
   }
 })

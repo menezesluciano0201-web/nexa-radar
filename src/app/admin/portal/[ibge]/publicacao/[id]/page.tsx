@@ -3,12 +3,10 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { requireAdminClient } from '@/lib/require-admin'
-import { UUID_RE } from '@/lib/format'
+import { IBGE_RE, UUID_RE } from '@/lib/format'
 import { salvarPublicacao, uploadFoto, removeFoto, deletePublicacao } from './actions'
 import { PublicacaoFotoUpload } from './PublicacaoEditor'
 import type { PublicacaoPortal, PublicacaoFoto } from '@/types'
-
-const IBGE_RE = /^\d{7}$/
 
 interface PageProps {
   params: Promise<{ ibge: string; id: string }>

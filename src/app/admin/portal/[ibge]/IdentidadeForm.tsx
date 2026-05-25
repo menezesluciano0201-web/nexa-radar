@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import type { MunicipioBranding } from '@/types'
+import { DEFAULT_COR_PRIMARIA } from '@/lib/portal'
 import { salvarBranding, uploadLogoOuBrasao } from './actions'
 
 interface Props {
@@ -11,7 +12,7 @@ interface Props {
 }
 
 export function IdentidadeForm({ ibge, branding }: Props) {
-  const [cor, setCor] = useState(branding?.cor_primaria ?? '#0284c7')
+  const [cor, setCor] = useState(branding?.cor_primaria ?? DEFAULT_COR_PRIMARIA)
 
   return (
     <div className="space-y-6">

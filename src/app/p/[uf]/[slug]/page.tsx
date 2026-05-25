@@ -2,6 +2,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getPortalData } from '@/lib/portal-data'
+import { DEFAULT_COR_PRIMARIA } from '@/lib/portal'
 import { PortalHeader } from '@/components/portal/PortalHeader'
 import { PortalHero } from '@/components/portal/PortalHero'
 import { KpiBlock } from '@/components/portal/KpiBlock'
@@ -44,7 +45,7 @@ export default async function PortalPage({ params }: PageProps) {
   if (!data) notFound()
 
   const { municipio, branding, kpis, publicacoes } = data
-  const corPrimaria = branding?.cor_primaria ?? '#0284c7'
+  const corPrimaria = branding?.cor_primaria ?? DEFAULT_COR_PRIMARIA
   const ultimaAtualizacao = publicacoes[0]?.publicado_em ?? null
 
   const pins = publicacoes
