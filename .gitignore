@@ -26,6 +26,7 @@ supabase/.temp
 .playwright-mcp/
 tsconfig.tsbuildinfo
 
-# Test artifacts
-m3-projeto-detalhe.png
+# Test artifacts (E2E screenshots — não commitar)
+m*-projeto-detalhe.png
+m*-portal-*.png
 *.e2e.png
