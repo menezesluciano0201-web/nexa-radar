@@ -1,9 +1,9 @@
 // src/components/briefing/BriefingForm.tsx
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useGenerationPolling } from '@/hooks/useGenerationPolling'
 import type { StatusBriefing } from '@/types'
 
 interface Props {
@@ -17,55 +17,14 @@ export default function BriefingForm({ parlamentarId }: Props) {
   const [briefingId, setBriefingId] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const router = useRouter()
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => {
-    if (!briefingId) return
-
-    const supabase = createClient()
-
-    // Declare channel binding before cleanup so the closure captures the variable safely.
-    // Initialized to null so cleanup() is safe even if called before channel is assigned.
-    let channel: ReturnType<typeof supabase.channel> | null = null
-
-    function cleanup() {
-      channel?.unsubscribe()
-      if (pollRef.current) clearInterval(pollRef.current)
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    }
-
-    channel = supabase
-      .channel(`briefing-${briefingId}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'briefings', filter: `id=eq.${briefingId}` },
-        (payload) => {
-          const newStatus = (payload.new as { status: StatusBriefing }).status
-          setStatus(newStatus)
-          if (newStatus === 'rascunho' || newStatus === 'erro') cleanup()
-        }
-      )
-      .subscribe()
-
-    // NOTE: GET /api/briefing/{id} is admin-only — this component is only used in the admin panel.
-    pollRef.current = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/briefing/${briefingId}`)
-        if (!res.ok) return
-        const data = (await res.json()) as { status: StatusBriefing }
-        setStatus(data.status)
-        if (data.status === 'rascunho' || data.status === 'erro') cleanup()
-      } catch { /* ignora */ }
-    }, 5_000)
-
-    timeoutRef.current = setTimeout(() => {
-      cleanup()
-      setStatus('timeout')
-    }, 120_000)
-
-    return () => cleanup()
-  }, [briefingId])
+  useGenerationPolling<StatusBriefing>({
+    id: briefingId,
+    entity: 'briefing',
+    isTerminal: (s) => s === 'rascunho' || s === 'erro',
+    onUpdate: setStatus,
+    onTimeout: () => setStatus('timeout'),
+  })
 
   async function handleGenerate() {
     setStatus('gerando')

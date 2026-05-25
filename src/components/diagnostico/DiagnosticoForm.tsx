@@ -1,9 +1,9 @@
 // src/components/diagnostico/DiagnosticoForm.tsx
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useGenerationPolling } from '@/hooks/useGenerationPolling'
 import type { StatusDiagnostico } from '@/types'
 
 interface Municipio {
@@ -24,71 +24,14 @@ export default function DiagnosticoForm({ municipios }: Props) {
   const [diagnosticoId, setDiagnosticoId] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const router = useRouter()
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => {
-    if (!diagnosticoId) return
-
-    const supabase = createClient()
-
-    // Declare channel binding before cleanup so the closure captures the variable safely.
-    // Initialized to null so cleanup() is safe even if called before channel is assigned.
-    let channel: ReturnType<typeof supabase.channel> | null = null
-
-    function cleanup() {
-      channel?.unsubscribe()
-      if (pollRef.current) clearInterval(pollRef.current)
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    }
-
-    // Realtime subscription
-    channel = supabase
-      .channel(`diagnostico-${diagnosticoId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'diagnosticos',
-          filter: `id=eq.${diagnosticoId}`,
-        },
-        (payload) => {
-          const newStatus = (payload.new as { status: StatusDiagnostico }).status
-          setStatus(newStatus)
-          if (newStatus === 'rascunho' || newStatus === 'erro') {
-            cleanup()
-          }
-        }
-      )
-      .subscribe()
-
-    // Polling fallback a cada 5s.
-    // NOTE: GET /api/diagnostico/{id} is admin-only (403 for non-admins).
-    // This component is only rendered from the admin panel, so this is correct.
-    // If reused on the portal, use Realtime as the sole status mechanism.
-    pollRef.current = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/diagnostico/${diagnosticoId}`)
-        if (!res.ok) return
-        const data = (await res.json()) as { status: StatusDiagnostico }
-        setStatus(data.status)
-        if (data.status === 'rascunho' || data.status === 'erro') {
-          cleanup()
-        }
-      } catch {
-        // ignora erro de poll
-      }
-    }, 5_000)
-
-    // Timeout após 2 minutos
-    timeoutRef.current = setTimeout(() => {
-      cleanup()
-      setStatus('timeout')
-    }, 120_000)
-
-    return () => cleanup()
-  }, [diagnosticoId])
+  useGenerationPolling<StatusDiagnostico>({
+    id: diagnosticoId,
+    entity: 'diagnostico',
+    isTerminal: (s) => s === 'rascunho' || s === 'erro',
+    onUpdate: setStatus,
+    onTimeout: () => setStatus('timeout'),
+  })
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
