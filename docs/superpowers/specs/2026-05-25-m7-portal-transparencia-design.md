@@ -256,6 +256,7 @@ Mobile-first, single page com 4 seções verticais:
 
 ### `/admin/portal` — lista geral
 - Tabela: município | qtd publicações ativas | última atualização | botão "Configurar →" → `/admin/portal/{ibge}`
+- **Badge "slug fallback"** em municípios cujo `slug` casa `^\d+$` (caiu no fallback `ibge` porque `nome` sanitizou vazio). Tooltip: "URL pública é numérica — corrigir `nome` em `municipios_habilitacao` para gerar slug legível." Mantém visibilidade desse data bug em vez de degradação silenciosa de UX.
 - Botão "+ Habilitar novo município": modal com select de `municipios_habilitacao` que NÃO têm `municipios_branding`. Ao selecionar → cria branding com defaults → redireciona para `/admin/portal/{ibge}`
 
 ### `/admin/portal/[ibge]` — gestão de UM município (3 abas)
@@ -355,15 +356,27 @@ Default em dev: `http://localhost:3000`.
 - Página pública usa `revalidate: 300` — ISR. Visitantes recebem HTML estático cacheado, mapa hidrata client-side
 - Mapa só carrega o chunk Leaflet (~40KB gzipped) quando o parent renderiza `<MapaExecucao>` (condicional em `hasCoords`) — ver §4
 - `<Image>` do Next.js em todas as fotos com `loading="lazy"` e `sizes` apropriados — bandwidth otimizado
-- **`next.config.ts` requer `images.remotePatterns`** para que o `<Image>` otimize fotos servidas pelo bucket Supabase. Adicionar:
+- **`next.config.ts` requer DOIS ajustes** (merge no arquivo existente, não substituir):
+
+  **(a) `images.remotePatterns`** — sem isso, Next.js cai pra `<img>` cru:
   ```ts
+  // Derivar hostname da env var pra não hardcodar o project ref:
+  const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname
+
+  // Adicionar ao config existente (não substituir o arquivo):
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: 'sfzuoqnzdhknmqtprfly.supabase.co', pathname: '/storage/v1/object/public/portal-fotos/**' }
+      { protocol: 'https', hostname: supabaseHost, pathname: '/storage/v1/object/public/portal-fotos/**' }
     ]
   }
   ```
-  Sem essa config, Next.js cai pra `<img>` cru — sem resize, sem AVIF/WebP, mobile sofre com fotos de 5MB.
+
+  **(b) CSP `img-src`** — o CSP atual em `next.config.ts` é `img-src 'self' data: blob:` e BLOQUEIA fotos do bucket público em produção, mesmo com `remotePatterns` configurado. Alterar para:
+  ```
+  "img-src 'self' data: blob: https://*.supabase.co"
+  ```
+  Esse fix é crítico — sem ele, **as fotos não aparecem em prod** (testar com browser devtools console aberto pra ver o erro CSP).
+
 - `sizes` por breakpoint nos cards: `sizes="(max-width: 768px) 100vw, 33vw"` (1 col mobile, 3 cols desktop)
 
 ---
@@ -394,7 +407,7 @@ Default em dev: `http://localhost:3000`.
 | 3 | `src/lib/portal.ts` (ordenarKpis, gerarUrlShare) + tests | — |
 | 4 | `src/lib/upload.ts` (validarFotoUpload) + tests | — |
 | 5 | Tipos: `PublicacaoPortal`, `MunicipioBranding`, `KpiPortal` em src/types | 1 |
-| 5b | `next.config.ts` — adicionar `images.remotePatterns` para o bucket portal-fotos | — |
+| 5b | `next.config.ts` — MERGE (não substituir): adicionar `images.remotePatterns` (hostname via env) + atualizar CSP `img-src` para liberar `https://*.supabase.co` | — |
 | 5c | `src/lib/portal-data.ts` — `getPortalData(uf, slug)` com `cache()` do React + Promise.all dos 3 fetches | 1, 5 |
 | 6 | Página pública `/p/[uf]/[slug]/page.tsx` (server, metadata via `getPortalData`, layout) | 1, 3, 5c |
 | 7 | Componentes: `PortalHeader`, `PortalHero`, `KpiBlock`, `CardsGrid`, `PortalFooter` | 5, 6 |
