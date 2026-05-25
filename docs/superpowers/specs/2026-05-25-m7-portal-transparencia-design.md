@@ -30,18 +30,23 @@ O Nexa Radar já entrega M2 (diagnóstico), M3 (gerador de projetos) e M5-simpli
 ### Tabela `municipios_habilitacao` (existente — adicionar coluna)
 
 ```sql
+-- Ordem importa: backfill + resolução de colisões ANTES do UNIQUE INDEX
+-- e do SET NOT NULL, senão a migration quebra em municípios homônimos.
+
 ALTER TABLE municipios_habilitacao ADD COLUMN slug text;
-CREATE UNIQUE INDEX municipios_habilitacao_uf_slug_unique ON municipios_habilitacao (uf, slug);
 
 -- Backfill: slugify(unaccent(lower(nome)))
 -- Ex: "Lagarto" → "lagarto", "São Paulo" → "sao-paulo"
 UPDATE municipios_habilitacao
-  SET slug = trim(both '-' from regexp_replace(
+  SET slug = NULLIF(trim(both '-' from regexp_replace(
     translate(lower(nome),
       'áàâãäéèêëíìîïóòôõöúùûüçñ',
       'aaaaaeeeeiiiiooooouuuucn'),
     '[^a-z0-9]+', '-', 'g'
-  ));
+  )), '');
+
+-- Fallback para nomes que viram string vazia após sanitização (raro mas blindar):
+UPDATE municipios_habilitacao SET slug = ibge WHERE slug IS NULL;
 
 -- Resolver eventuais colisões (mesmo UF + nomes que viram mesmo slug):
 -- adiciona sufixo -2, -3, etc. para duplicatas.
@@ -55,6 +60,8 @@ UPDATE municipios_habilitacao m
 FROM ranked
 WHERE m.ibge = ranked.ibge AND ranked.rn > 1;
 
+-- Agora seguro criar o índice + NOT NULL
+CREATE UNIQUE INDEX municipios_habilitacao_uf_slug_unique ON municipios_habilitacao (uf, slug);
 ALTER TABLE municipios_habilitacao ALTER COLUMN slug SET NOT NULL;
 ```
 
@@ -79,7 +86,7 @@ CREATE TABLE municipios_branding (
   municipio_ibge   text PRIMARY KEY REFERENCES municipios_habilitacao(ibge),
   logo_url         text,
   brasao_url       text,
-  cor_primaria     text DEFAULT '#0f766e',  -- teal-700 padrão Nexa
+  cor_primaria     text DEFAULT '#0284c7',  -- nexa-600 (sky/cyan), match com tailwind.config.ts
   prefeito_nome    text,
   prefeito_gestao  text,                     -- ex: "Gestão 2025-2028"
   atualizado_em    timestamptz NOT NULL DEFAULT now(),
@@ -162,9 +169,14 @@ USING (
 - Sem `robots.txt` específico — Next.js default permite indexação
 
 ### Cache
-- Server component com `export const revalidate = 300` (5 min)
+- Server component com `export const revalidate = 300` (5 min) — ISR
 - Admin actions chamam `revalidatePath('/p/{uf}/{slug}')` após mutar publicações/KPIs/branding
-- Resultado: cidadão vê alteração imediatamente após admin salvar
+- **Limitação de multi-replica**: `revalidatePath` invalida só a réplica que processou a action. Em deploy single-replica (EasyPanel MVP) isso é irrelevante. Quando escalar para múltiplas réplicas, migrar para `revalidateTag` com cache compartilhado (Redis ou similar) — fora do escopo MVP.
+
+### Fetch pattern (compartilhado com `generateMetadata`)
+- Função `getPortalData(uf, slug)` em `src/lib/portal-data.ts`, wrapped com `import { cache } from 'react'` para dedup automático
+- Primeiro `await` resolve o município (`uf + slug → ibge`); depois `Promise.all([fetchBranding(ibge), fetchKpis(ibge), fetchPublicacoesAtivas(ibge)])` em paralelo (3 queries independentes)
+- Mesma `getPortalData` é chamada tanto em `generateMetadata` quanto no componente da page — React deduplica a chamada por request
 
 ---
 
@@ -222,6 +234,7 @@ Mobile-first, single page com 4 seções verticais:
 - Zoom inicial: 13 (cidade)
 - Pin: marcador padrão com tooltip do título
 - Click no pin: dispara `scrollIntoView({ behavior: 'smooth' })` no card correspondente + flash visual no card (border highlight 2s)
+- **Render-conditional, NÃO import-conditional**: o parent (`/p/[uf]/[slug]/page.tsx`) renderiza `<MapaExecucao>` **apenas** quando `publicacoes.some(p => p.lat && p.lng)`. Dentro de `MapaExecucao`, o `react-leaflet` usa `dynamic(() => import('react-leaflet'), { ssr: false })`. Resultado: chunk Leaflet (~40KB) só baixa em portais com coords; sem coords, zero overhead
 
 ### Modal de publicação
 - Carrossel de fotos (swipe touch + setas)
@@ -234,6 +247,8 @@ Mobile-first, single page com 4 seções verticais:
 - Botão "📱 WhatsApp": `https://wa.me/?text=${encodeURIComponent('Veja: ' + titulo + ' — ' + url)}`
 - Botão "🔗 Copiar link": `navigator.clipboard.writeText(url)` + toast "Copiado!"
 - URL inclui hash `#pub-{id}` → ao abrir o link, página carrega + abre modal automaticamente desse id
+- **Fallback hash inválido**: se o id no `#pub-{id}` não existe ou está em publicação `ativo=false`, o hook que abre o modal apenas ignora silenciosamente — sem alert, sem erro, sem redirect. Hash permanece no URL.
+- **Tradeoff hash vs query param**: hash não é enviado ao servidor, então `generateMetadata` não consegue gerar OG image **específica da publicação**. OG preview no WhatsApp mostra sempre o portal genérico (logo + nome município + primeira foto ativa). Se share por publicação individual com preview rico virar requisito, migrar `#pub-{id}` → `?pub={id}` (visível ao SSR) — fora do escopo MVP.
 
 ---
 
@@ -338,8 +353,18 @@ Default em dev: `http://localhost:3000`.
 
 - Bucket `portal-fotos` é público → URLs servidas pelo CDN Supabase (sem signed URL roundtrip)
 - Página pública usa `revalidate: 300` — ISR. Visitantes recebem HTML estático cacheado, mapa hidrata client-side
-- Mapa só carrega o chunk Leaflet (~40KB gzipped) se houver coords; senão, lazy import nem dispara
+- Mapa só carrega o chunk Leaflet (~40KB gzipped) quando o parent renderiza `<MapaExecucao>` (condicional em `hasCoords`) — ver §4
 - `<Image>` do Next.js em todas as fotos com `loading="lazy"` e `sizes` apropriados — bandwidth otimizado
+- **`next.config.ts` requer `images.remotePatterns`** para que o `<Image>` otimize fotos servidas pelo bucket Supabase. Adicionar:
+  ```ts
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'sfzuoqnzdhknmqtprfly.supabase.co', pathname: '/storage/v1/object/public/portal-fotos/**' }
+    ]
+  }
+  ```
+  Sem essa config, Next.js cai pra `<img>` cru — sem resize, sem AVIF/WebP, mobile sofre com fotos de 5MB.
+- `sizes` por breakpoint nos cards: `sizes="(max-width: 768px) 100vw, 33vw"` (1 col mobile, 3 cols desktop)
 
 ---
 
@@ -369,7 +394,9 @@ Default em dev: `http://localhost:3000`.
 | 3 | `src/lib/portal.ts` (ordenarKpis, gerarUrlShare) + tests | — |
 | 4 | `src/lib/upload.ts` (validarFotoUpload) + tests | — |
 | 5 | Tipos: `PublicacaoPortal`, `MunicipioBranding`, `KpiPortal` em src/types | 1 |
-| 6 | Página pública `/p/[uf]/[slug]/page.tsx` (server, metadata, layout, fetch) | 1, 3 |
+| 5b | `next.config.ts` — adicionar `images.remotePatterns` para o bucket portal-fotos | — |
+| 5c | `src/lib/portal-data.ts` — `getPortalData(uf, slug)` com `cache()` do React + Promise.all dos 3 fetches | 1, 5 |
+| 6 | Página pública `/p/[uf]/[slug]/page.tsx` (server, metadata via `getPortalData`, layout) | 1, 3, 5c |
 | 7 | Componentes: `PortalHeader`, `PortalHero`, `KpiBlock`, `CardsGrid`, `PortalFooter` | 5, 6 |
 | 8 | Componente `MapaExecucao` (dynamic + react-leaflet) | 5 |
 | 9 | Componente `PublicacaoModal` (carrossel, share buttons) + auto-open via hash | 5, 7 |
