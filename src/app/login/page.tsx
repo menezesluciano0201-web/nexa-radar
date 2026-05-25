@@ -1,4 +1,5 @@
 // src/app/login/page.tsx
+import Link from 'next/link'
 import { signIn } from './actions'
 
 interface LoginPageProps {
@@ -81,6 +82,15 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             Entrar
           </button>
         </form>
+
+        <div className="text-center">
+          <Link
+            href="/forgot-password"
+            className="text-sm text-nexa-400 hover:text-nexa-300"
+          >
+            Esqueci minha senha
+          </Link>
+        </div>
 
         <p className="text-center text-xs text-slate-500">
           Acesso restrito à equipe Nexa Radar e clientes autorizados
