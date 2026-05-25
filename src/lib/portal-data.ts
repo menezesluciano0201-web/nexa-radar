@@ -3,6 +3,7 @@ import 'server-only'
 import { cache } from 'react'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient, type AdminClient } from '@/lib/supabase/admin'
+import { portalUrl } from '@/lib/portal'
 import type { MunicipioBranding, KpiPortal, PublicacaoPortal } from '@/types'
 
 export interface MunicipioInfo {
@@ -62,14 +63,13 @@ export const getPortalData = cache(async (uf: string, slug: string): Promise<Por
   }
 })
 
-// Dispara revalidatePath('/p/{uf}/{slug}') a partir do ibge.
+// Dispara revalidatePath() do portal público a partir do ibge.
 // Usa o admin client já autenticado (evita duplo auth+profile roundtrip).
-// Centraliza a convenção da URL pública — futura mudança em /p/ toca 1 arquivo.
 export async function revalidarPortalPath(admin: AdminClient, ibge: string): Promise<void> {
   const { data } = await admin
     .from('municipios_habilitacao')
     .select('uf, slug')
     .eq('ibge', ibge)
     .single()
-  if (data) revalidatePath(`/p/${data.uf.toLowerCase()}/${data.slug}`)
+  if (data) revalidatePath(portalUrl(data.uf, data.slug))
 }

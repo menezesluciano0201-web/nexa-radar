@@ -5,9 +5,9 @@
 import { redirect } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient, type AdminClient } from '@/lib/supabase/admin'
 
-export async function requireAdminClient(): Promise<ReturnType<typeof createAdminClient>> {
+export async function requireAdminClient(): Promise<AdminClient> {
   const { admin } = await requireAdminClientWithUser()
   return admin
 }
@@ -17,7 +17,7 @@ export async function requireAdminClient(): Promise<ReturnType<typeof createAdmi
 // aprovado_por) — o admin client é service-role e não carrega cookies, então
 // admin.auth.getUser() retornaria null aqui.
 export async function requireAdminClientWithUser(): Promise<{
-  admin: ReturnType<typeof createAdminClient>
+  admin: AdminClient
   user: User
 }> {
   const supabase = await createClient()

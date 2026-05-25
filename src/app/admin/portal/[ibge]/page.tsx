@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { requireAdminClient } from '@/lib/require-admin'
 import { IBGE_RE } from '@/lib/format'
+import { portalUrl } from '@/lib/portal'
 import { IdentidadeForm } from './IdentidadeForm'
 import { KpisForm } from './KpisForm'
 import { togglePublicacao } from './actions'
@@ -39,7 +40,7 @@ export default async function PortalMunicipioPage({ params, searchParams }: Page
   const kpis = (kpiRes.data ?? []) as KpiPortal[]
   const publicacoes = (pubRes.data ?? []) as PublicacaoPortal[]
 
-  const portalUrl = `/p/${municipio.uf.toLowerCase()}/${municipio.slug}`
+  const urlPortal = portalUrl(municipio.uf, municipio.slug)
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -53,7 +54,7 @@ export default async function PortalMunicipioPage({ params, searchParams }: Page
           </h1>
         </div>
         <a
-          href={portalUrl}
+          href={urlPortal}
           target="_blank"
           rel="noopener noreferrer"
           className="text-sm text-nexa-400 hover:text-nexa-300"
