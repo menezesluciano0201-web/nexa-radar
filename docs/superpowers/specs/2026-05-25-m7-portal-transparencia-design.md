@@ -256,7 +256,7 @@ Mobile-first, single page com 4 seções verticais:
 
 ### `/admin/portal` — lista geral
 - Tabela: município | qtd publicações ativas | última atualização | botão "Configurar →" → `/admin/portal/{ibge}`
-- **Badge "slug fallback"** em municípios cujo `slug` casa `^\d+$` (caiu no fallback `ibge` porque `nome` sanitizou vazio). Tooltip: "URL pública é numérica — corrigir `nome` em `municipios_habilitacao` para gerar slug legível." Mantém visibilidade desse data bug em vez de degradação silenciosa de UX.
+- **Badge "slug fallback"** em municípios cujo `slug` casa `^\d+$` (caiu no fallback `ibge` porque `nome` sanitizou vazio). Tooltip: "URL pública é numérica — corrigir `nome` em `municipios_habilitacao` para gerar slug legível." Mantém visibilidade desse data bug em vez de degradação silenciosa de UX. (Falso positivo é zero na prática: nomes de municípios IBGE nunca são puramente numéricos por LC 14/1973.)
 - Botão "+ Habilitar novo município": modal com select de `municipios_habilitacao` que NÃO têm `municipios_branding`. Ao selecionar → cria branding com defaults → redireciona para `/admin/portal/{ibge}`
 
 ### `/admin/portal/[ibge]` — gestão de UM município (3 abas)
@@ -360,8 +360,11 @@ Default em dev: `http://localhost:3000`.
 
   **(a) `images.remotePatterns`** — sem isso, Next.js cai pra `<img>` cru:
   ```ts
-  // Derivar hostname da env var pra não hardcodar o project ref:
-  const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname
+  // Guard explícito: build falha ruidosamente se a env não estiver setada,
+  // em vez de quebrar runtime com "Invalid URL" sem rastro de causa.
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!supabaseUrl) throw new Error('NEXT_PUBLIC_SUPABASE_URL is required for images.remotePatterns')
+  const supabaseHost = new URL(supabaseUrl).hostname
 
   // Adicionar ao config existente (não substituir o arquivo):
   images: {
@@ -371,11 +374,11 @@ Default em dev: `http://localhost:3000`.
   }
   ```
 
-  **(b) CSP `img-src`** — o CSP atual em `next.config.ts` é `img-src 'self' data: blob:` e BLOQUEIA fotos do bucket público em produção, mesmo com `remotePatterns` configurado. Alterar para:
+  **(b) CSP `img-src`** — alvo de edição: const `securityHeaders` em `next.config.ts`, linha que contém literalmente `"img-src 'self' data: blob:"`. Alterar para:
   ```
   "img-src 'self' data: blob: https://*.supabase.co"
   ```
-  Esse fix é crítico — sem ele, **as fotos não aparecem em prod** (testar com browser devtools console aberto pra ver o erro CSP).
+  Esse fix é crítico — sem ele, o CSP atual bloqueia as fotos do bucket público em produção mesmo com `remotePatterns` configurado, e o browser engole as URLs silenciosamente (visível apenas no devtools console). **Por que `*.supabase.co` (wildcard) em vez de host específico**: o hostname do projeto varia entre branches/preview deploys; wildcard mantém o CSP funcional sem precisar regerar a string a cada ambiente. Tightening para hostname específico é um follow-up se o threat model mudar.
 
 - `sizes` por breakpoint nos cards: `sizes="(max-width: 768px) 100vw, 33vw"` (1 col mobile, 3 cols desktop)
 
