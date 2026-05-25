@@ -7,19 +7,14 @@ import { requireAdminClient, requireAdminClientWithUser } from '@/lib/require-ad
 import { IBGE_RE } from '@/lib/format'
 import { DEFAULT_COR_PRIMARIA } from '@/lib/portal'
 
-async function getMunicipioSlug(ibge: string): Promise<{ uf: string; slug: string } | null> {
-  const admin = await requireAdminClient()
+// Recebe o admin client já autenticado para não rodar auth+profile lookup duas vezes.
+async function revalidarPortal(admin: Awaited<ReturnType<typeof requireAdminClient>>, ibge: string) {
   const { data } = await admin
     .from('municipios_habilitacao')
     .select('uf, slug')
     .eq('ibge', ibge)
     .single()
-  return data ?? null
-}
-
-async function revalidarPortal(ibge: string) {
-  const m = await getMunicipioSlug(ibge)
-  if (m) revalidatePath(`/p/${m.uf.toLowerCase()}/${m.slug}`)
+  if (data) revalidatePath(`/p/${data.uf.toLowerCase()}/${data.slug}`)
 }
 
 export async function salvarBranding(formData: FormData) {
@@ -44,7 +39,7 @@ export async function salvarBranding(formData: FormData) {
     }, { onConflict: 'municipio_ibge' })
 
   revalidatePath(`/admin/portal/${ibge}`)
-  await revalidarPortal(ibge)
+  await revalidarPortal(admin, ibge)
   redirect(`/admin/portal/${ibge}?aba=identidade&ok=1`)
 }
 
@@ -71,7 +66,7 @@ export async function salvarKpis(formData: FormData) {
   }
 
   revalidatePath(`/admin/portal/${ibge}`)
-  await revalidarPortal(ibge)
+  await revalidarPortal(admin, ibge)
   redirect(`/admin/portal/${ibge}?aba=kpis&ok=1`)
 }
 
@@ -85,7 +80,7 @@ export async function togglePublicacao(formData: FormData) {
   await admin.from('publicacoes_portal').update({ ativo: !ativo }).eq('id', id)
 
   revalidatePath(`/admin/portal/${ibge}`)
-  await revalidarPortal(ibge)
+  await revalidarPortal(admin, ibge)
   redirect(`/admin/portal/${ibge}?aba=publicacoes`)
 }
 
@@ -118,6 +113,6 @@ export async function uploadLogoOuBrasao(formData: FormData) {
     }, { onConflict: 'municipio_ibge' })
 
   revalidatePath(`/admin/portal/${ibge}`)
-  await revalidarPortal(ibge)
+  await revalidarPortal(admin, ibge)
   redirect(`/admin/portal/${ibge}?aba=identidade&ok=1`)
 }
