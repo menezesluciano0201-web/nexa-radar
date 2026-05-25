@@ -249,3 +249,47 @@ export interface SecoesProjeto {
   declaracoes: string[]
   secoes_texto: Record<string, string>
 }
+
+// ─── M7 Portal de Transparência ──────────────────────────────────
+
+export interface MunicipioBranding {
+  municipio_ibge: string
+  logo_url: string | null
+  brasao_url: string | null
+  cor_primaria: string  // hex, default '#0284c7'
+  prefeito_nome: string | null
+  prefeito_gestao: string | null
+  atualizado_em: string
+  atualizado_por: string | null
+}
+
+export interface KpiPortal {
+  id: string
+  municipio_ibge: string
+  ordem: number  // 1..4
+  label: string
+  valor: string
+  sufixo: string | null
+}
+
+export interface PublicacaoFoto {
+  url: string
+  alt: string
+  ordem: number
+}
+
+export interface PublicacaoPortal {
+  id: string
+  municipio_ibge: string
+  aprovado_por: string
+  titulo: string
+  descricao: string | null
+  valor_destaque: string | null
+  fotos: PublicacaoFoto[]
+  lat: number | null
+  lng: number | null
+  data_evento: string | null
+  resumo_execucao: Record<string, unknown>
+  publicado_em: string
+  ativo: boolean
+}
