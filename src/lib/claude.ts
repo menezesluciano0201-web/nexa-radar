@@ -1,6 +1,7 @@
 // src/lib/claude.ts
 import 'server-only'
 import Anthropic from '@anthropic-ai/sdk'
+import type { SecoesProjeto } from '@/types'
 
 // Timeout set to 65s — generation takes 30–60s; 30s was too short and caused false errors.
 const anthropic = new Anthropic({
@@ -78,6 +79,21 @@ IMPORTANTE:
 `
 
   return gerarTexto(prompt)
+}
+
+export async function gerarProjeto(prompt: string): Promise<SecoesProjeto> {
+  const message = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 8192,
+    messages: [{ role: 'user', content: prompt }],
+  })
+  if (message.stop_reason === 'max_tokens') {
+    throw new Error('Claude response truncated — considerar max_tokens: 16384 para templates longos como CAPS')
+  }
+  const text = message.content[0].type === 'text' ? message.content[0].text : ''
+  const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/) ?? text.match(/(\{[\s\S]*\})/)
+  if (!jsonMatch) throw new Error('Claude não retornou JSON válido para projeto')
+  return JSON.parse(jsonMatch[1]) as SecoesProjeto
 }
 
 export async function gerarBriefingParlamentar(dados: {
