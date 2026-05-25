@@ -155,3 +155,97 @@ export interface ScoreMunicipio {
   score_idh: number | null
   calculado_em: string
 }
+
+export type TemplateName = 'scfv' | 'tea' | 'caps' | 'idoso' | 'esporte' | 'saude_basica' | 'educacao'
+export type StatusProjeto = 'gerando' | 'rascunho' | 'erro'
+
+export interface CampoForm {
+  nome: string
+  label: string
+  tipo: 'text' | 'number' | 'select' | 'textarea' | 'checkbox' | 'multi-select'
+  opcoes?: string[]
+  obrigatorio: boolean
+}
+
+export interface SecaoConfig {
+  id: string
+  titulo: string
+  obrigatoria: boolean
+  instrucoes: string
+}
+
+export interface RubricaOrcamento {
+  codigo: string
+  descricao: string
+  percentualMaximo?: number
+}
+
+export interface TemplateConfig {
+  nome: string
+  orgao: string
+  fundo: string
+  camposEspecificos: CampoForm[]
+  secoes: SecaoConfig[]
+  indicadores: string[]
+  rubricas: RubricaOrcamento[]
+  declaracoesObrigatorias: string[]
+  promptInstrucoes: string
+  disclaimer: string
+}
+
+export interface ProjetoInputs {
+  diagnostico_id: string
+  municipio_ibge: string
+  template: TemplateName
+  objeto: string
+  justificativa: string
+  num_beneficiarios: number
+  valor_solicitado: number
+  valor_contrapartida: number
+  prazo_meses: number
+  oscip_executora?: string
+  capacidade_instalada: string
+  campos_extras: Record<string, unknown>
+}
+
+export interface Projeto {
+  id: string
+  diagnostico_id: string | null
+  municipio_ibge: string
+  gerado_por: string
+  template: TemplateName
+  objeto: string | null
+  justificativa: string | null
+  num_beneficiarios: number | null
+  valor_solicitado: number | null
+  valor_contrapartida: number | null
+  prazo_meses: number | null
+  oscip_executora: string | null
+  capacidade_instalada: string | null
+  campos_extras: Record<string, unknown> | null
+  status: StatusProjeto
+  secoes_ia: SecoesProjeto | null
+  pdf_url: string | null
+  docx_url: string | null
+  criado_em: string
+}
+
+export interface ValidationResult {
+  valid: boolean
+  errors: string[]
+}
+
+export interface ItemOrcamento {
+  rubrica: string
+  descricao: string
+  valor: number
+}
+
+export interface SecoesProjeto {
+  metas_fisicas: Array<{ trimestre: number; meta: string; quantidade: number }>
+  indicadores: Array<{ nome: string; formula: string; meta: string }>
+  cronograma: Array<{ etapa: string; mes_inicio: number; mes_fim: number }>
+  orcamento: Array<{ rubrica: string; descricao: string; valor: number }>
+  declaracoes: string[]
+  secoes_texto: Record<string, string>
+}
