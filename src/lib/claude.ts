@@ -9,7 +9,7 @@ const anthropic = new Anthropic({
   timeout: 65_000,
 })
 
-const MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-20250514'
+const MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6'
 const MAX_TOKENS = 4096
 
 export async function gerarTexto(prompt: string): Promise<string> {
@@ -82,11 +82,15 @@ IMPORTANTE:
 }
 
 export async function gerarProjeto(prompt: string): Promise<SecoesProjeto> {
-  const message = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 8192,
-    messages: [{ role: 'user', content: prompt }],
-  })
+  // Projetos longos podem demorar 60–120s — override do timeout default de 65s do client.
+  const message = await anthropic.messages.create(
+    {
+      model: MODEL,
+      max_tokens: 8192,
+      messages: [{ role: 'user', content: prompt }],
+    },
+    { timeout: 180_000 }
+  )
   if (message.stop_reason === 'max_tokens') {
     throw new Error('Claude response truncated — considerar max_tokens: 16384 para templates longos como CAPS')
   }
