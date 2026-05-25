@@ -20,3 +20,12 @@ node_modules/
 # Supabase
 supabase/.branches
 supabase/.temp
+
+# Tool caches
+.serena/
+.playwright-mcp/
+tsconfig.tsbuildinfo
+
+# Test artifacts
+m3-projeto-detalhe.png
+*.e2e.png

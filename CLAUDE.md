@@ -142,7 +142,7 @@ Meta: R$ 75k+/mês recorrente com 15-20 clientes ativos.
 - Agendador: cron job semanal para varredura regional
 
 ### IA
-- Claude claude-sonnet-4-20250514 para todos os módulos de geração
+- Claude claude-sonnet-4-6 para todos os módulos de geração (override via env `CLAUDE_MODEL`)
 - Prompts especializados por módulo (diagnóstico, projeto, pitch, briefing parlamentar, casamento, relatório)
 - Sempre retornar JSON estruturado quando o output alimenta outro sistema
 
