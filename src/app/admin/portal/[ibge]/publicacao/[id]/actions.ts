@@ -4,18 +4,9 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { requireAdminClient, requireAdminClientWithUser } from '@/lib/require-admin'
+import { revalidarPortalPath } from '@/lib/portal-data'
 import { IBGE_RE, UUID_RE } from '@/lib/format'
 import type { PublicacaoFoto } from '@/types'
-
-// Recebe o admin client já autenticado para não rodar auth+profile lookup duas vezes.
-async function revalidarPortal(admin: Awaited<ReturnType<typeof requireAdminClient>>, ibge: string) {
-  const { data } = await admin
-    .from('municipios_habilitacao')
-    .select('uf, slug')
-    .eq('ibge', ibge)
-    .single()
-  if (data) revalidatePath(`/p/${data.uf.toLowerCase()}/${data.slug}`)
-}
 
 export async function salvarPublicacao(formData: FormData) {
   const ibge = formData.get('ibge') as string
@@ -67,7 +58,7 @@ export async function salvarPublicacao(formData: FormData) {
     if (error) redirect(`/admin/portal/${ibge}/publicacao/${idRaw}?error=update_failed`)
   }
 
-  await revalidarPortal(admin, ibge)
+  await revalidarPortalPath(admin, ibge)
   redirect(`/admin/portal/${ibge}/publicacao/${novoId}?ok=1`)
 }
 
@@ -105,7 +96,7 @@ export async function uploadFoto(formData: FormData) {
   await admin.from('publicacoes_portal').update({ fotos }).eq('id', id)
 
   revalidatePath(`/admin/portal/${ibge}/publicacao/${id}`)
-  await revalidarPortal(admin, ibge)
+  await revalidarPortalPath(admin, ibge)
   redirect(`/admin/portal/${ibge}/publicacao/${id}?ok=1`)
 }
 
@@ -121,7 +112,7 @@ export async function removeFoto(formData: FormData) {
   await admin.from('publicacoes_portal').update({ fotos }).eq('id', id)
 
   revalidatePath(`/admin/portal/${ibge}/publicacao/${id}`)
-  await revalidarPortal(admin, ibge)
+  await revalidarPortalPath(admin, ibge)
   redirect(`/admin/portal/${ibge}/publicacao/${id}`)
 }
 
@@ -134,6 +125,6 @@ export async function deletePublicacao(formData: FormData) {
   await admin.from('publicacoes_portal').delete().eq('id', id).eq('municipio_ibge', ibge)
 
   revalidatePath(`/admin/portal/${ibge}`)
-  await revalidarPortal(admin, ibge)
+  await revalidarPortalPath(admin, ibge)
   redirect(`/admin/portal/${ibge}?aba=publicacoes`)
 }
