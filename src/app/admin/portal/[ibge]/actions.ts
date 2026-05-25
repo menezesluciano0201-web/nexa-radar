@@ -4,6 +4,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { requireAdminClient } from '@/lib/require-admin'
+import { createClient } from '@/lib/supabase/server'
 
 const IBGE_RE = /^\d{7}$/
 
@@ -26,8 +27,11 @@ export async function salvarBranding(formData: FormData) {
   const ibge = formData.get('ibge') as string
   if (!IBGE_RE.test(ibge)) redirect('/admin/portal')
 
+  // O admin client é service-role (sem auth context). Pegar user via server client.
+  const server = await createClient()
+  const { data: { user } } = await server.auth.getUser()
+
   const admin = await requireAdminClient()
-  const { data: { user } } = await admin.auth.getUser()
 
   const cor = ((formData.get('cor_primaria') as string) ?? '').trim() || '#0284c7'
   const prefeito_nome = ((formData.get('prefeito_nome') as string) ?? '').trim() || null

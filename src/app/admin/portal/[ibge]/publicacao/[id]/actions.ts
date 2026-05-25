@@ -4,6 +4,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { requireAdminClient } from '@/lib/require-admin'
+import { createClient } from '@/lib/supabase/server'
 import { UUID_RE } from '@/lib/format'
 import type { PublicacaoFoto } from '@/types'
 
@@ -24,9 +25,12 @@ export async function salvarPublicacao(formData: FormData) {
   const idRaw = (formData.get('id') as string) || 'nova'
   if (!IBGE_RE.test(ibge)) redirect('/admin/portal')
 
-  const admin = await requireAdminClient()
-  const { data: { user } } = await admin.auth.getUser()
+  // O admin client é service-role (sem auth context). Pegar user via server client.
+  const server = await createClient()
+  const { data: { user } } = await server.auth.getUser()
   if (!user) redirect('/login')
+
+  const admin = await requireAdminClient()
 
   const titulo = ((formData.get('titulo') as string) ?? '').trim()
   if (!titulo) redirect(`/admin/portal/${ibge}/publicacao/${idRaw}?error=titulo_obrigatorio`)
