@@ -19,7 +19,7 @@ const securityHeaders = [
         ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
         : "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",
+      "img-src 'self' data: blob: https://*.supabase.co",
       "font-src 'self'",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
       "frame-ancestors 'none'",
@@ -27,11 +27,26 @@ const securityHeaders = [
   },
 ]
 
+// Guard explícito: build falha ruidosamente se a env não estiver setada,
+// em vez de quebrar runtime com "Invalid URL" sem rastro de causa.
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+if (!supabaseUrl) throw new Error('NEXT_PUBLIC_SUPABASE_URL is required for images.remotePatterns')
+const supabaseHost = new URL(supabaseUrl).hostname
+
 const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',
     },
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: supabaseHost,
+        pathname: '/storage/v1/object/public/portal-fotos/**',
+      },
+    ],
   },
   async headers() {
     return [
