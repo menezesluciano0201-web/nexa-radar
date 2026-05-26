@@ -27,12 +27,6 @@ const securityHeaders = [
   },
 ]
 
-// Guard explícito: build falha ruidosamente se a env não estiver setada,
-// em vez de quebrar runtime com "Invalid URL" sem rastro de causa.
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-if (!supabaseUrl) throw new Error('NEXT_PUBLIC_SUPABASE_URL is required for images.remotePatterns')
-const supabaseHost = new URL(supabaseUrl).hostname
-
 const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
@@ -40,10 +34,12 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
+    // Hostname hardcoded — env vars NEXT_PUBLIC_* não estão disponíveis no
+    // build do EasyPanel/Nixpacks. Para mover de projeto Supabase, trocar aqui.
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: supabaseHost,
+        hostname: 'sfzuoqnzdhknmqtprfly.supabase.co',
         pathname: '/storage/v1/object/public/portal-fotos/**',
       },
     ],
