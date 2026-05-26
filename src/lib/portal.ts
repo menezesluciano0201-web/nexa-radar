@@ -21,7 +21,11 @@ export function portalUrl(uf: string, slug: string): string {
 }
 
 export function gerarUrlShare(uf: string, slug: string, pubId?: string): string {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+  // Prioridade: env var (controle explícito) > window.location.origin (browser
+  // self-detect quando env var não foi inlined no build) > localhost (SSR/test).
+  const base =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
   const path = portalUrl(uf, slug)
   return pubId ? `${base}${path}#pub-${pubId}` : `${base}${path}`
 }
