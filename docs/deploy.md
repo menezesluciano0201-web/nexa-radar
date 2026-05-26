@@ -27,14 +27,16 @@ No painel Supabase → **Authentication → URL Configuration**:
 
 ### Site URL
 ```
-https://<seu-dominio>
+https://nexa-radar.2.24.71.118.nip.io
 ```
 
 ### Redirect URLs (allow list)
 ```
-https://<seu-dominio>/auth/callback
-https://<seu-dominio>/**
+https://nexa-radar.2.24.71.118.nip.io/auth/callback
+https://nexa-radar.2.24.71.118.nip.io/**
 ```
+
+> **Quando comprar domínio próprio** (ex: `nexaradar.com.br`), substituir as 3 URLs acima e atualizar `NEXT_PUBLIC_SITE_URL` no EasyPanel. nip.io é provisório.
 
 Sem isso, o link de "Esqueci minha senha" enviado por email vai redirecionar para `localhost:3000` em vez do domínio de produção, e o reset não funciona.
 
