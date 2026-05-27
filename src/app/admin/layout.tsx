@@ -14,10 +14,12 @@ import {
   Activity,
   Bell,
   LogOut,
+  Radar,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/admin', label: 'Visão Geral', icon: LayoutDashboard },
+  { href: '/admin/radar', label: 'Radar', icon: Radar },
   { href: '/admin/clientes', label: 'Clientes', icon: Users },
   { href: '/admin/municipios', label: 'Municípios', icon: MapPin },
   { href: '/admin/diagnostico/novo', label: 'Novo Diagnóstico', icon: FileText },
