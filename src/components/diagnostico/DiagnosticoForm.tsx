@@ -14,12 +14,13 @@ interface Municipio {
 
 interface Props {
   municipios: Municipio[]
+  ibgeInicial?: string
 }
 
 type LocalStatus = StatusDiagnostico | 'idle' | 'timeout'
 
-export default function DiagnosticoForm({ municipios }: Props) {
-  const [ibge, setIbge] = useState('')
+export default function DiagnosticoForm({ municipios, ibgeInicial = '' }: Props) {
+  const [ibge, setIbge] = useState(ibgeInicial)
   const [status, setStatus] = useState<LocalStatus>('idle')
   const [diagnosticoId, setDiagnosticoId] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
