@@ -1,8 +1,6 @@
 // src/lib/diagnostico.ts
 import type { TransferenciaFederal, ProgramaCritico } from '@/types'
-
-const PCT_EXECUCAO_CRITICO = 70
-const DIAS_PRAZO_CRITICO = 90
+import { PCT_EXECUCAO_CRITICO, DIAS_PRAZO_CRITICO } from '@/lib/risco-constants'
 const MAX_PROGRAMAS_CRITICOS = 20  // cap sent to Claude to avoid prompt overflow
 
 export function identificarProgramasCriticos(
