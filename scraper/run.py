@@ -36,7 +36,10 @@ def fetch_municipios_por_uf(ufs: list[str]) -> list[tuple[str, str]]:
 
 
 def run_transferegov(municipios: Iterable[tuple[str, str]]) -> None:
-    """M1 Radar: coleta SÓ Transferegov para os municípios fornecidos."""
+    """M1 Radar: coleta SÓ Transferegov para os municípios fornecidos.
+    AVISO: api.transferegov.sistema.gov.br foi descontinuada/nunca existiu (NXDOMAIN).
+    Mantido para retrocompatibilidade; use --source portal_transparencia.
+    """
     total = 0
     for ibge, nome in municipios:
         try:
@@ -51,6 +54,32 @@ def run_transferegov(municipios: Iterable[tuple[str, str]]) -> None:
         except Exception as e:
             log.error("Transferegov falhou em %s (%s): %s", nome, ibge, e, exc_info=True)
     log.info("Transferegov | TOTAL upserts: %d", total)
+
+
+def run_portal_transparencia(municipios: Iterable[tuple[str, str]], anos: list[int]) -> None:
+    """M1 Radar: coleta Portal da Transparência (transferências voluntárias) para os municípios fornecidos.
+    Requer PORTAL_TRANSPARENCIA_API_KEY no ambiente — falha imediatamente sem.
+    """
+    from scraper.config import PORTAL_API_KEY
+    if not PORTAL_API_KEY:
+        log.error("PORTAL_TRANSPARENCIA_API_KEY ausente — abortando. Cadastre em "
+                  "https://api.portaldatransparencia.gov.br/swagger-ui/index.html")
+        sys.exit(1)
+
+    total = 0
+    for ibge, nome in municipios:
+        try:
+            rows = coletar_transferencias(ibge, anos)
+            if rows:
+                upsert(
+                    "transferencias_federais",
+                    rows,
+                    on_conflict="municipio_ibge,programa,fonte,competencia",
+                )
+                total += len(rows)
+        except Exception as e:
+            log.error("Portal Transparência falhou em %s (%s): %s", nome, ibge, e, exc_info=True)
+    log.info("Portal Transparência | TOTAL upserts: %d (anos: %s)", total, anos)
 
 
 def coletar_municipio_full(ibge: str, nome: str, anos: list[int]) -> None:
@@ -97,9 +126,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Nexa Radar scrapers")
     parser.add_argument(
         "--source",
-        choices=["transferegov", "full"],
+        choices=["transferegov", "portal_transparencia", "full"],
         default="full",
-        help="'transferegov' = só Transferegov (M1); 'full' = todas as fontes (legado)",
+        help="'portal_transparencia' = M1 Radar (recomendado); 'transferegov' = legado/descontinuado; 'full' = todas (legado)",
     )
     parser.add_argument(
         "--ufs",
@@ -112,14 +141,20 @@ def main() -> None:
     log.info("Nexa Radar — Início | source=%s | ufs=%s | %s",
              args.source, args.ufs or "MUNICIPIOS_ATIVOS", datetime.now().isoformat())
 
-    if args.source == "transferegov":
+    if args.source in ("transferegov", "portal_transparencia"):
         if args.ufs:
             ufs_list = [u.strip().upper() for u in args.ufs.split(",") if u.strip()]
             municipios = fetch_municipios_por_uf(ufs_list)
             log.info("M1 Radar | %d municípios das UFs %s", len(municipios), ufs_list)
         else:
             municipios = [(ibge, nome) for nome, ibge in MUNICIPIOS_ATIVOS.items()]
-        run_transferegov(municipios)
+
+        if args.source == "transferegov":
+            run_transferegov(municipios)
+        else:
+            hoje = datetime.now()
+            anos = [hoje.year, hoje.year - 1]
+            run_portal_transparencia(municipios, anos)
     else:
         # 'full' = comportamento legado
         hoje = datetime.now()

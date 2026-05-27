@@ -67,6 +67,7 @@ class PortalTransparenciaClient:
 def coletar_transferencias(ibge: str, anos: list[int]) -> list[dict]:
     """
     Retorna rows prontas para inserção em transferencias_federais.
+    Calcula percentual_execucao (pago/empenhado * 100) que é critério primário do M1 Radar.
     """
     client = PortalTransparenciaClient()
     rows: list[dict] = []
@@ -74,15 +75,20 @@ def coletar_transferencias(ibge: str, anos: list[int]) -> list[dict]:
         registros = client.transferencias_por_municipio(ibge, ano)
         log.info("  %s | %d | %d registros", ibge, ano, len(registros))
         for r in registros:
+            empenhado = float(r.get("valorEmpenhado") or 0)
+            pago = float(r.get("valorPago") or 0)
+            pct = (pago / empenhado * 100.0) if empenhado > 0 else 0.0
             rows.append({
-                "municipio_ibge":  ibge,
-                "programa":        _truncate((r.get("programa") or {}).get("nome", "DESCONHECIDO"), 100),
-                "fundo":           (r.get("orgaoSuperior") or {}).get("nome", "FEDERAL"),
-                "valor_empenhado": float(r.get("valorEmpenhado") or 0),
-                "valor_liquidado": float(r.get("valorLiquidado") or 0),
-                "valor_pago":      float(r.get("valorPago") or 0),
-                "fonte":           "portal_transparencia",
-                "competencia":     f"{ano}-01-01",
-                "raw_json":        r,
+                "municipio_ibge":      ibge,
+                "programa":            _truncate((r.get("programa") or {}).get("nome", "DESCONHECIDO"), 100),
+                "fundo":               (r.get("orgaoSuperior") or {}).get("nome", "FEDERAL"),
+                "valor_empenhado":     empenhado,
+                "valor_liquidado":     float(r.get("valorLiquidado") or 0),
+                "valor_pago":          pago,
+                "percentual_execucao": round(pct, 2),
+                "fonte":               "portal_transparencia",
+                "competencia":         f"{ano}-01-01",
+                "prazo_limite":        None,
+                "raw_json":            r,
             })
     return rows

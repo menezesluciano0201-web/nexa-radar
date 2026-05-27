@@ -1,8 +1,10 @@
 # .github/workflows/radar-scrape.yml
-# M1 Radar de Subexecução — cron semanal Transferegov para AL/SE/PE/BA.
-# Trigger manual disponível em Actions → "Radar — scrape Transferegov" → Run workflow.
+# M1 Radar de Subexecução — cron semanal Portal da Transparência para AL/SE/PE/BA.
+# Trigger manual disponível em Actions → "Radar — scrape Portal Transparência" → Run workflow.
+# Requer secret PORTAL_TRANSPARENCIA_API_KEY (cadastrar em
+# https://api.portaldatransparencia.gov.br/swagger-ui/index.html).
 
-name: Radar — scrape Transferegov
+name: Radar — scrape Portal Transparência
 
 on:
   schedule:
@@ -22,6 +24,7 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      PORTAL_TRANSPARENCIA_API_KEY: ${{ secrets.PORTAL_TRANSPARENCIA_API_KEY }}
       RADAR_UFS: ${{ github.event.inputs.ufs || 'AL,SE,PE,BA' }}
     steps:
       - name: Checkout
@@ -38,5 +41,5 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r scraper/requirements.txt
 
-      - name: Run Transferegov scraper
-        run: python -m scraper.run --source transferegov --ufs "$RADAR_UFS"
+      - name: Run Portal Transparência scraper
+        run: python -m scraper.run --source portal_transparencia --ufs "$RADAR_UFS"
