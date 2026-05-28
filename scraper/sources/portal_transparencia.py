@@ -109,20 +109,20 @@ def coletar_transferencias(ibge: str, anos: Optional[list[int]] = None) -> list[
     for r in registros:
         valor = float(r.get("valor") or 0)
         liberado = float(r.get("valorLiberado") or 0)
-        pct = (liberado / valor * 100.0) if valor > 0 else 0.0
         programa = (r.get("dimConvenio") or {}).get("objeto") or "CONVÊNIO"
         fundo = (r.get("orgao") or {}).get("nome") or "FEDERAL"
+        # percentual_execucao é GENERATED COLUMN no Postgres (round(valor_pago/valor_empenhado*100,2))
+        # — não enviar no payload, o banco calcula sozinho.
         rows.append({
-            "municipio_ibge":      ibge,
-            "programa":            _truncate(programa, 100),
-            "fundo":               _truncate(fundo, 100),
-            "valor_empenhado":     valor,
-            "valor_liquidado":     liberado,
-            "valor_pago":          liberado,
-            "percentual_execucao": round(pct, 2),
-            "fonte":               "portal_transparencia",
-            "competencia":         _competencia_de(r),
-            "prazo_limite":        _parse_data_br(r.get("dataFinalVigencia")),
-            "raw_json":            r,
+            "municipio_ibge":  ibge,
+            "programa":        _truncate(programa, 100),
+            "fundo":           _truncate(fundo, 100),
+            "valor_empenhado": valor,
+            "valor_liquidado": liberado,
+            "valor_pago":      liberado,
+            "fonte":           "portal_transparencia",
+            "competencia":     _competencia_de(r),
+            "prazo_limite":    _parse_data_br(r.get("dataFinalVigencia")),
+            "raw_json":        r,
         })
     return rows

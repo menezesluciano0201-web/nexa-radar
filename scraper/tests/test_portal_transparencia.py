@@ -27,7 +27,8 @@ def test_coletar_transferencias_retorna_rows_normalizadas():
     assert rows[0]["fundo"] == "Ministério da Educação"
     assert rows[0]["valor_empenhado"] == 500000.0
     assert rows[0]["valor_pago"] == 250000.0
-    assert rows[0]["percentual_execucao"] == 50.0
+    # percentual_execucao NÃO vai no payload (generated column no Postgres)
+    assert "percentual_execucao" not in rows[0]
     assert rows[0]["fonte"] == "portal_transparencia"
     assert rows[0]["competencia"] == "2024-01-01"
     assert rows[0]["prazo_limite"] == "2026-12-31"
@@ -68,7 +69,6 @@ def test_coletar_transferencias_objeto_nulo_usa_default():
     assert len(rows) == 1
     assert rows[0]["programa"] == "CONVÊNIO"
     assert rows[0]["fundo"] == "FEDERAL"
-    assert rows[0]["percentual_execucao"] == 0.0
     assert rows[0]["prazo_limite"] is None
 
 
